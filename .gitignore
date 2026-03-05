@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# Node / Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+.npm
+
+# Dataset ve Büyük Dosyalar
+dataset/models/*
+dataset/renders/*
+!dataset/models/.gitkeep
+!dataset/renders/.gitkeep
+
+# Eğitilmiş Modeller
+ml_pipeline/saved_models/*.h5
+ml_pipeline/saved_models/*.pb
+
+# İşletim Sistemi Dosyaları
+.DS_Store
+Thumbs.db
+
+TODOS.md
