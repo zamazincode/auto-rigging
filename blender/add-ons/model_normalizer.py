@@ -56,11 +56,9 @@ class VIEW3D_PT_model_normalizer(bpy.types.Panel):
         layout = self.layout
         scene = context.scene
 
-        # Hedef boyut parametresi
         layout.prop(scene, "hedef_model_boyutu", text="Hedef Boyut")
         layout.separator()
         
-        # Çalıştırma butonu
         layout.operator("object.normalize_models", text="Boyutlandır ve Sıfırla", icon='VIEW_ZOOM')
 
 classes = (

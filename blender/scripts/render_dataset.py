@@ -3,18 +3,18 @@ import os
 import math
 import random
 
-# ================= PATHS =================
+# ================= AYARLAR =================
 # for Quadruped
-# INPUT_FOLDER = "./dataset/models/quadruped" 
-# OUTPUT_FOLDER = "C:/Users/fatih/Desktop/Masaustu/Programming/Projects/auto-rigging/dataset/renders/quadruped"
+# INPUT_FOLDER = r"C:\Users\fatih\Desktop\Masaustu\Programming\Projects\auto-rigging\dataset\renders\quadruped" 
+# OUTPUT_FOLDER = r"C:/Users/fatih/Desktop/Masaustu/Programming/Projects/auto-rigging/dataset/renders/quadruped"
 
 # for Humanoid
-# INPUT_FOLDER = "./dataset/models/humanoid" 
-# OUTPUT_FOLDER = "C:/Users/fatih/Desktop/Masaustu/Programming/Projects/auto-rigging/dataset/renders/humanoid"
+# INPUT_FOLDER = r"C:\Users\fatih\Desktop\Masaustu\Programming\Projects\auto-rigging\dataset\renders\humanoid" 
+# OUTPUT_FOLDER = r"C:/Users/fatih/Desktop/Masaustu/Programming/Projects/auto-rigging/dataset/renders/humanoid"
 
-# test
-INPUT_FOLDER = r"C:\Users\fatih\Desktop\model-clean" 
-OUTPUT_FOLDER = r"C:\Users\fatih\Desktop\model-clean\render"
+# for Test
+INPUT_FOLDER = r"C:\Users\fatih\Desktop\model-clean\test-models" 
+OUTPUT_FOLDER = r"C:/Users/fatih/Desktop/Masaustu/Programming/Projects/auto-rigging/dataset/test_renders"
 
 RESOLUTION = 256 
 VIEWS = 4 
