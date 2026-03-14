@@ -6,7 +6,7 @@ Bu projenin temel amacı, kullanıcı tarafından yüklenen statik 3D (mesh) mod
 
 ## 2. Sistem Mimarisi ve Kullanılacak Teknolojiler
 
-Görüntü İşleme & Sınıflandırma (ML): TensorFlow / Keras (ResNet50 Mimarisi - Transfer Learning).
+Görüntü İşleme & Sınıflandırma (ML): TensorFlow / Keras (EfficientNetB0 Mimarisi - Transfer Learning).
 
 3D Motoru & Otomasyon: Blender Python API (bpy) - Sunucuda arayüzsüz (headless) çalışacak.
 
@@ -24,7 +24,7 @@ Blender scripti devreye girerek modeli merkeze alır ve 4 ila 6 farklı açıdan
 
 Yapay Zeka ile Sınıflandırma (Classification):
 
-Çekilen bu 2D görüntüler, eğitilmiş Multi-view ResNet50 modeline beslenir.
+Çekilen bu 2D görüntüler, eğitilmiş EfficientNetB0 modeline beslenir.
 
 Model, nesnenin kategorisini yüksek bir güven skoruyla belirler (Örn: Sınıf: İnsansı, Sınıf: Dört Ayaklı).
 

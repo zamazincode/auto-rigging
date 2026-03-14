@@ -12,7 +12,6 @@ frontend/build/
 .npm
 
 # Dataset ve Büyük Dosyalar
-dataset/*
 dataset/models/*
 dataset/renders/*
 !dataset/models/.gitkeep
@@ -21,7 +20,7 @@ dataset/renders/*
 # Eğitilmiş Modeller
 ml_pipeline/saved_models/*.h5
 ml_pipeline/saved_models/*.pb
-ml_pipeline/saved_models/*.keras
+#ml_pipeline/saved_models/*.keras
 
 # İşletim Sistemi Dosyaları
 .DS_Store
