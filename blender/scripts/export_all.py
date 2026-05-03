@@ -1,3 +1,9 @@
+"""
+Sahnedeki tüm modelleri ayrı ayrı olarak fbx export almayı sağlar.
+
+Temizleme işlemi ve normalizasyonları yapılmış modellerin toplu olarak bulunduğu blender dosyası için kullanıldı.
+"""
+
 import bpy
 import os
 

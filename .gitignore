@@ -26,5 +26,8 @@ ml_pipeline/saved_models/*.pb
 .DS_Store
 Thumbs.db
 
+# Projeyle ilgili notlar
+
 TODOS.md
 NOTES.md
+auto_rigging.md

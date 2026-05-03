@@ -30,7 +30,7 @@ Model, nesnenin kategorisini yüksek bir güven skoruyla belirler (Örn: Sınıf
 
 Şablon Eşleştirme ve Ölçeklendirme (Template Matching & Scaling):
 
-Belirlenen sınıfa ait önceden hazırlanmış, mükemmel ağırlıklandırılmış iskelet şablonu (Örn: humanoid_template.blend) sahneye çağrılır.
+Belirlenen sınıfa ait önceden hazırlanmış iskelet şablonu (Örn: humanoid_template.blend) sahneye çağrılır.
 
 Yüklenen 3D modelin en, boy ve yükseklik sınırları (Bounding Box) hesaplanır. Şablon iskelet, bu sınırlara tam oturacak şekilde X, Y, Z eksenlerinde matematiksel olarak ölçeklendirilir.
 

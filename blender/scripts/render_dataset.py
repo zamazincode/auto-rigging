@@ -1,3 +1,10 @@
+"""
+Klasörlerdeki tüm modelleri tek tek sahneye alıp 4 farklı yönden render alıp png formatında kaydeder.
+
+Çalıştırmak için:
+"C:\Program Files\Blender Foundation\Blender 5.0\blender.exe" --background --python /blender/scripts/render_dataset.py
+"""
+
 import bpy
 import os
 import math

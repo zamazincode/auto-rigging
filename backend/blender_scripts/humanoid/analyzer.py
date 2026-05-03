@@ -18,275 +18,13 @@ import bpy
 from mathutils import Vector
 import math
 
-
-# =============================================================================
-# YARDIMCI FONKSİYONLAR (Shared Utilities)
-# =============================================================================
-
-def get_world_bbox(obj):
-    """
-    Obje'nin dünya uzayındaki bounding box'ını hesapla.
-    
-    Bounding box: objeyi saracak hayali bir kutunun min ve max köşeleri.
-    Dünya uzayı: Sahnedeki global koordinat sistemi.
-    
-    Döndürülen değerler:
-    - min_v: Kutunun minimum X, Y, Z köşesi
-    - max_v: Kutunun maksimum X, Y, Z köşesi
-    """
-    # Blender'in bounding box'ı 8 köşe olarak verir. Her köşeyi dünya uzayına çevir.
-    world_pts = [obj.matrix_world @ Vector(corner) for corner in obj.bound_box]
-    
-    # Tüm X, Y, Z koordinatlarını ayır
-    xs = [p.x for p in world_pts]
-    ys = [p.y for p in world_pts]
-    zs = [p.z for p in world_pts]
-    
-    # Min ve max köşeleri belirle
-    min_v = Vector((min(xs), min(ys), min(zs)))
-    max_v = Vector((max(xs), max(ys), max(zs)))
-    
-    return min_v, max_v
-
-
-def get_mesh_dimensions(obj):
-    """
-    Obje'nin yüksekliğini ve 3D boyutlarını hesapla.
-    
-    Döndürülen değerler:
-    - height: Z eksenindeki yükseklik (en önemli ölçek)
-    - dims: X, Y, Z boyutlarının Vector'ü
-    """
-    min_v, max_v = get_world_bbox(obj)
-    dims = max_v - min_v
-    return dims.z, dims
-
-
-def average_vec(points):
-    """
-    Vector listesinin ortalamasını al (merkez/centroid).
-    
-    Argüman:
-    - points: Vector nesnelerinin listesi
-    
-    Döndürülen değer:
-    - Tüm noktaların ortalaması veya None (liste boşsa)
-    """
-    if not points:
-        return None
-    total = Vector((0.0, 0.0, 0.0))
-    for p in points:
-        total += p
-    return total / len(points)
-
-
-def lerp_vec(a, b, t):
-    """
-    A ile B arasında doğrusal interpolasyon yap.
-    
-    Argümanlar:
-    - a: Başlangıç noktası
-    - b: Bitiş noktası
-    - t: 0.0 ila 1.0 arasında interpolasyon faktörü (0.0=A, 1.0=B, 0.5=ortası)
-    """
-    return a + (b - a) * t
-
-
-def get_world_verts(obj):
-    """
-    Mesh'in tüm vertex'lerini dünya koordinatlarına çevir.
-    
-    Argüman:
-    - obj: Blender mesh objesi
-    
-    Döndürülen değer:
-    - List[Vector]: Dünya uzayındaki tüm vertex pozisyonları
-    """
-    return [obj.matrix_world @ v.co for v in obj.data.vertices]
-
-
-# =============================================================================
-# CROSS-SECTION PROFİL ANALİZİ
-# =============================================================================
-
-def build_profile(obj, axis='Z', num_slices=80):
-    """
-    Mesh'i belirtilen eksen boyunca dilimle ve her dilimin
-    genişlik/yükseklik profilini çıkar.
-    
-    Args:
-        obj: Blender mesh objesi
-        axis: Dilimleme ekseni ('X', 'Y', veya 'Z')
-        num_slices: Dilim sayısı (fazla = daha hassas ama daha yavaş)
-    
-    Returns:
-        List[dict]: Her dilim için istatistikler. Boş dilimler dahil.
-    
-    Her dilim dict'i şunları içerir:
-        - index: Dilim indeksi (0 = en alt/sol/arka)
-        - pos: Dilimin merkez Z (veya X/Y) pozisyonu
-        - width_x: X eksenindeki genişlik
-        - width_y: Y eksenindeki derinlik
-        - center_x, center_y: Dilimdeki vertexlerin merkezi
-        - z_min, z_max: Z sınırları
-        - count: Dilimdeki vertex sayısı
-    """
-    verts = get_world_verts(obj)
-    if len(verts) < 50:
-        return []
-    
-    # Eksen erişim fonksiyonları
-    axis_map = {
-        'X': lambda v: v.x,
-        'Y': lambda v: v.y,
-        'Z': lambda v: v.z,
-    }
-    get_axis = axis_map[axis]
-    
-    axis_vals = [get_axis(v) for v in verts]
-    axis_min = min(axis_vals)
-    axis_max = max(axis_vals)
-    total_length = axis_max - axis_min
-    
-    if total_length < 1e-6:
-        return []
-    
-    slice_size = total_length / num_slices
-    
-    # Vertex'leri tek geçişte bin'lere (dilimlere) dağıt — O(N) karmaşıklık
-    # (Her dilim için tüm vertexleri taramak O(N*num_slices) olurdu)
-    bins = [[] for _ in range(num_slices)]
-    for v in verts:
-        idx = int((get_axis(v) - axis_min) / slice_size)
-        idx = min(idx, num_slices - 1)  # Tam sınırda olan vertex'ler için güvenlik
-        bins[idx].append(v)
-    
-    profile = []
-    for i in range(num_slices):
-        slice_verts = bins[i]
-        pos = axis_min + (i + 0.5) * slice_size  # Dilimin merkez pozisyonu
-        
-        if len(slice_verts) < 2:
-            profile.append({
-                'index': i,
-                'pos': pos,
-                'width_x': 0.0,
-                'width_y': 0.0,
-                'center_x': 0.0,
-                'center_y': 0.0,
-                'z_min': 0.0,
-                'z_max': 0.0,
-                'count': len(slice_verts),
-            })
-            continue
-        
-        xs = [v.x for v in slice_verts]
-        ys = [v.y for v in slice_verts]
-        zs = [v.z for v in slice_verts]
-        
-        profile.append({
-            'index': i,
-            'pos': pos,
-            'width_x': max(xs) - min(xs),
-            'width_y': max(ys) - min(ys),
-            'x_min': min(xs),
-            'x_max': max(xs),
-            'y_min': min(ys),
-            'y_max': max(ys),
-            'z_min': min(zs),
-            'z_max': max(zs),
-            'center_x': (max(xs) + min(xs)) / 2,
-            'center_y': (max(ys) + min(ys)) / 2,
-            'count': len(slice_verts),
-        })
-    
-    return profile
-
-
-def smooth_profile(values, window=5):
-    """
-    Basit hareketli ortalama (moving average) ile gürültü azaltma.
-    
-    Küçük mesh bozukluklarından kaynaklanan piksel düzeyindeki
-    dalgalanmaları filtreleyerek daha net lokal min/max tespiti yapar.
-    
-    Args:
-        values: Sayısal değerler listesi
-        window: Pencere boyutu (varsayılan 5)
-    
-    Returns:
-        Düzleştirilmiş değerler listesi (aynı uzunlukta)
-    """
-    if len(values) < window:
-        return values[:]
-    
-    half = window // 2
-    smoothed = []
-    for i in range(len(values)):
-        lo = max(0, i - half)
-        hi = min(len(values), i + half + 1)
-        smoothed.append(sum(values[lo:hi]) / (hi - lo))
-    return smoothed
-
-
-def find_local_extrema(values, prominence_ratio=0.08):
-    """
-    Profilden anlamlı lokal minimum ve maksimumları bul.
-    
-    Çok küçük dalgalanmaları görmezden gelmek için "prominence" (önem)
-    filtresi uygular. Sadece toplam değer aralığının belirli bir
-    yüzdesinden daha belirgin olan extrema'lar döndürülür.
-    
-    Args:
-        values: Sayısal değerler listesi
-        prominence_ratio: Minimum önem eşiği (toplam range'in yüzdesi)
-                         Varsayılan %8 — çok küçük yapılırsa gürültü geçer,
-                         çok büyük yapılırsa gerçek noktalar kaçırılır.
-    
-    Returns:
-        (local_minima_indices, local_maxima_indices): İki liste
-    """
-    if len(values) < 3:
-        return [], []
-    
-    val_range = max(values) - min(values)
-    if val_range < 1e-8:
-        return [], []
-    
-    min_prominence = val_range * prominence_ratio
-    
-    # === Tüm lokal min/max adaylarını bul ===
-    raw_mins = []
-    raw_maxs = []
-    
-    for i in range(1, len(values) - 1):
-        if values[i] <= values[i-1] and values[i] <= values[i+1]:
-            raw_mins.append(i)
-        if values[i] >= values[i-1] and values[i] >= values[i+1]:
-            raw_maxs.append(i)
-    
-    # === Prominence (önem) filtresi ===
-    # Bir tepe ne kadar belirgin? Sol ve sağdaki en derin vadiden ne kadar yüksek?
-    def prominence(idx, is_max):
-        val = values[idx]
-        if is_max:
-            left_min = min(values[0:idx+1])
-            right_min = min(values[idx:len(values)])
-            return val - max(left_min, right_min)
-        else:
-            left_max = max(values[0:idx+1])
-            right_max = max(values[idx:len(values)])
-            return min(left_max, right_max) - val
-    
-    filtered_mins = [i for i in raw_mins if prominence(i, False) >= min_prominence]
-    filtered_maxs = [i for i in raw_maxs if prominence(i, True) >= min_prominence]
-    
-    return filtered_mins, filtered_maxs
-
+from common.mesh_utils import get_world_bbox, get_mesh_dimensions, average_vec, lerp_vec, get_world_verts
+from common.profile_analysis import build_profile, smooth_profile, find_local_extrema
 
 # =============================================================================
 # İNSANSI (HUMANOID) ANATOMİK TESPİT
 # =============================================================================
+
 
 def detect_humanoid_pose(obj):
     """
@@ -332,7 +70,7 @@ def detect_humanoid_pose(obj):
     
     ratio = shoulder_width / waist_width
     
-    print(f"📐 Pose tespiti: omuz/bel oranı = {ratio:.2f}")
+    print(f"[ÖLÇÜM] Pose tespiti: omuz/bel oranı = {ratio:.2f}")
     
     if ratio > 2.5:
         print("   → T-Pose tespit edildi (kollar yatay)")
@@ -458,7 +196,7 @@ def detect_humanoid_landmarks(obj):
     
     if neck_idx is None:
         neck_idx = int(n * 0.82)
-        print("   ⚠️ Boyun tespiti başarısız, fallback (%82) kullanılıyor")
+        print("   [UYARI] Boyun tespiti başarısız, fallback (%82) kullanılıyor")
     
     neck_z = profile[neck_idx]['pos']
     
@@ -485,10 +223,10 @@ def detect_humanoid_landmarks(obj):
     if nearby_maxs:
         # En yüksekteki max'ı tercih et (anatomik olarak omuz en üsttedir)
         shoulder_idx = max(nearby_maxs)
-        print(f"   ✅ Omuz: anatomik tahmin ({shoulder_estimate_idx}) + cross-section max ({shoulder_idx})")
+        print(f"   [OK] Omuz: anatomik tahmin ({shoulder_estimate_idx}) + cross-section max ({shoulder_idx})")
     else:
         shoulder_idx = shoulder_estimate_idx
-        print(f"   ℹ️ Omuz: cross-section max bulunamadı, anatomik tahmin kullanılıyor ({shoulder_idx})")
+        print(f"   [BİLGİ] Omuz: cross-section max bulunamadı, anatomik tahmin kullanılıyor ({shoulder_idx})")
     
     # Güvenlik: Omuz boyundan en az %4 aşağıda olmalı
     max_shoulder_idx = neck_idx - max(int(n * 0.04), 3)
@@ -515,7 +253,7 @@ def detect_humanoid_landmarks(obj):
         waist_idx = min(waist_candidates, key=lambda m: smoothed_widths[m])
     else:
         waist_idx = int(n * 0.52)
-        print("   ⚠️ Bel tespiti başarısız, fallback (%52) kullanılıyor")
+        print("   [UYARI] Bel tespiti başarısız, fallback (%52) kullanılıyor")
     
     waist_z = profile[waist_idx]['pos']
     
@@ -533,7 +271,7 @@ def detect_humanoid_landmarks(obj):
     else:
         # Fallback: belden %5 aşağıda veya %42 seviyesi
         hip_idx = max(int(n * 0.42), waist_idx - max(int(n * 0.05), 3))
-        print("   ⚠️ Kalça tespiti başarısız, fallback kullanılıyor")
+        print("   [UYARI] Kalça tespiti başarısız, fallback kullanılıyor")
     
     # Güvenlik: Hip belden en az %3 aşağıda olmalı
     hip_idx = min(hip_idx, waist_idx - max(int(n * 0.03), 2))
@@ -551,7 +289,7 @@ def detect_humanoid_landmarks(obj):
     knee_z_floor = z_min + total_height * 0.25
     knee_z = max(knee_z_biased, knee_z_floor)
     
-    print(f"📊 Cross-section anatomik tespitler:")
+    print(f"[RAPOR] Cross-section anatomik tespitler:")
     print(f"   Boyun Z:  {neck_z:.4f}  (dilim {neck_idx}/{n})")
     print(f"   Omuz Z:   {shoulder_z:.4f}  (dilim {shoulder_idx}/{n})")
     print(f"   Bel Z:    {waist_z:.4f}  (dilim {waist_idx}/{n})")
@@ -603,13 +341,13 @@ def detect_humanoid_landmarks(obj):
     
     # === 7. Güvenlik Kontrolleri ===
     if not shoulder_left or not shoulder_right:
-        print("⚠️ Omuz vertexleri bulunamadı (sol/sağ)")
+        print("[UYARI] Omuz vertexleri bulunamadı (sol/sağ)")
         return None
     if not arm_left or not arm_right:
-        print("⚠️ Kol vertexleri bulunamadı (sol/sağ)")
+        print("[UYARI] Kol vertexleri bulunamadı (sol/sağ)")
         return None
     if not foot_left or not foot_right:
-        print("⚠️ Ayak vertexleri bulunamadı (sol/sağ)")
+        print("[UYARI] Ayak vertexleri bulunamadı (sol/sağ)")
         return None
     
     # === 8. Landmark Pozisyonlarını Hesapla ===
@@ -665,7 +403,7 @@ def detect_humanoid_landmarks(obj):
     else:
         hip_inset = 0.40
     
-    print(f"📏 Oransal hesaplamalar:")
+    print(f"[HESAP] Oransal hesaplamalar:")
     print(f"   Bel genişliği:     {waist_width:.4f}")
     print(f"   Omuz tam genişlik: {shoulder_full_width:.4f}")
     print(f"   Omuz inset oranı:  {shoulder_inset:.3f}")

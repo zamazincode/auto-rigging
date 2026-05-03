@@ -4,348 +4,194 @@ import sys
 import math
 from mathutils import Vector
 
-####################################################################################
-# Blender script olarak çalıştırıldığında veya GUI (Text Editor) içinden tetiklendiğinde 
-# aynı dizindeki modülleri bulabilmesi için dizini Python path'ine dahil ediyoruz.
-import os
-import sys
-import importlib
-
+# Sistem yollarını ekle (standalones için)
 script_dir = os.path.normpath(r"c:\Users\fatih\Desktop\Masaustu\Programming\Projects\auto-rigging\backend\blender_scripts")
 if script_dir not in sys.path:
     sys.path.insert(0, script_dir)
 
-try:
-    import cross_section_analyzer
-    importlib.reload(cross_section_analyzer)  # Blender hafızasındaki önbelleği temizler
-except ModuleNotFoundError as e:
-    print("SİSTEM YOLU (sys.path):", sys.path)
-    raise e
-####################################################################################
-
-from cross_section_analyzer import (
-    get_world_bbox,
-    get_mesh_dimensions,
-    average_vec,
-    lerp_vec,
-    get_world_verts,
-    detect_humanoid_pose,
-    detect_humanoid_landmarks,
-)
+from common.mesh_utils import get_world_bbox, get_mesh_dimensions, average_vec, lerp_vec, get_world_verts
+from common.blender_utils import pick_target_mesh, ensure_object_mode, select_only, append_custom_rig
+from common.mesh_processing import preprocess_mesh, create_voxel_proxy, cleanup_proxy
+from common.fitting_utils import solve_two_bone_ik, refine_bones_with_raycast, extract_chain_ratios
+from humanoid.analyzer import detect_humanoid_pose, detect_humanoid_landmarks
 
 TEMPLATE_DIR = r"C:\Users\fatih\Desktop\Masaustu\Programming\Projects\auto-rigging\backend\templates"
-
 RIG_FILE_T = "human_rig_T.blend" 
 RIG_FILE_A = "human_rig_A.blend" 
-
 RIG_OBJECT_NAME = "Armature"
 
-
-# ════════════════════════════════════════════════════════════════════════
-#                        YARDIMCI FONKSİYONLAR
-# ════════════════════════════════════════════════════════════════════════
-
-def pick_target_mesh():
+def apply_regional_scaling(rig, chain_ratios):
     """
-    Sahnedeki riglenmesi gereken mesh'i seç.
+    Bölgesel ölçekleme + IK solve.
     
-    Tercih sırası:
-    1. Eğer aktif obje mesh ise, onu kullan.
-    2. Değilse, sahnedeki en büyük hacimli mesh'i seç.
-    3. Hiç mesh yoksa None dön.
+    fit_bones_to_anatomy() SONRASINDA çağrılır.
+    
+    Her kemik zinciri için:
+    1. Anchor noktalarını koru (omuz, el, kalça, ayak bileği)
+    2. Template oranlarıyla zincir uzunluklarını dağıt
+    3. 2-Bone IK ile orta eklemleri (dirsek, diz) çöz
+    
+    NEDEN FARKLI:
+        fit_bones_to_anatomy dirsek için lerp(shoulder, wrist, 0.52)
+        kullanıyor → sabit oran, her model için aynı.
+        
+        Bu fonksiyon template rig'deki GERÇEK upper_arm/forearm
+        oranını koruyarak dirsek pozisyonunu MATEMATİKSEL olarak
+        çözer (kosinüs teoremi + pole vector).
     """
-    active = bpy.context.view_layer.objects.active
-    
-    if active and active.type == 'MESH':
-        return active
-
-    meshes = [obj for obj in bpy.context.scene.objects if obj.type == 'MESH']
-    if not meshes:
-        return None
-
-    def mesh_volume_world(obj):
-        _, dims = get_mesh_dimensions(obj)
-        return dims.x * dims.y * dims.z
-
-    return max(meshes, key=mesh_volume_world)
-
-
-
-def ensure_object_mode():
-    """Blender'in Object Mode olmasını sağla."""
-    if bpy.context.active_object and bpy.context.active_object.mode != 'OBJECT':
-        bpy.ops.object.mode_set(mode='OBJECT')
-
-
-def select_only(obj):
-    """Tüm seçimleri kaldır ve yalnızca verilen objeyi seç."""
-    bpy.ops.object.select_all(action='DESELECT')
-    obj.select_set(True)
-    bpy.context.view_layer.objects.active = obj
-
-
-def append_custom_rig(filepath, obj_name):
-    """Harici .blend dosyasından iskelet objesini mevcut sahneye ekle."""
-    if not os.path.exists(filepath):
-        return None
-    bpy.ops.object.select_all(action='DESELECT')
-    existing_objects = set(obj.name for obj in bpy.context.scene.objects)
-    
-    inner_path = "Object"
-    bpy.ops.wm.append(
-        filepath=os.path.join(filepath, inner_path, obj_name),
-        directory=os.path.join(filepath, inner_path),
-        filename=obj_name
-    )
-    
-    new_objects = [obj for obj in bpy.context.scene.objects if obj.name not in existing_objects]
-    if new_objects:
-        rig = new_objects[0]
-        select_only(rig)
-        return rig
-    return None
-
-
-def preprocess_mesh(obj):
-    """
-    Mesh'i auto-weights öncesi temizle.
-    
-    Non-manifold kenarlar, çift vertexler ve tutarsız normaller
-    ARMATURE_AUTO (Heat Diffusion) algoritmasının başarısız olmasına
-    veya kötü ağırlıklar üretmesine neden olabilir.
-    """
-    print("🧹 Mesh ön işleme (preprocessing) yapılıyor...")
-    
-    select_only(obj)
-    bpy.ops.object.mode_set(mode='EDIT')
-    bpy.ops.mesh.select_all(action='SELECT')
-    
-    # 1. Çift vertexleri birleştir — çok yakın vertexler heat diffusion'ı bozabilir
-    bpy.ops.mesh.remove_doubles(threshold=0.0001)
-    
-    # 2. Normalleri tutarlı yap — ters normaller ağırlık hesabını yanlış yapar
-    bpy.ops.mesh.normals_make_consistent(inside=False)
-    
-    # 3. Degenerate yüzeyleri temizle — sıfır alanlı üçgenler sorun yaratır
-    bpy.ops.mesh.dissolve_degenerate(threshold=0.0001)
-    
-    bpy.ops.object.mode_set(mode='OBJECT')
-    print("🧹 Mesh ön işleme tamamlandı.")
-
-
-# ════════════════════════════════════════════════════════════════════════
-#                  VOXEL PROXY + RAYCASTING SİSTEMİ
-#
-# Neden gerekli?
-# - Oyun modelleri genellikle zırh, silah, kemer gibi çıkıntılara sahip
-# - Cross-section analizi bu çıkıntıları vücut olarak algılıyor
-# - Voxel remesh bu detayları yumuşatıp temiz bir siluet üretir
-# - Raycasting ile kemikler hacmin tam merkezine oturtulur
-#
-# Pipeline:
-# 1. create_voxel_proxy()   → Temiz, katı mesh kopyası
-# 2. Cross-section analiz   → Proxy üzerinde (daha doğru Z ve genişlik)
-# 3. Kemik yerleştirme       → Hibrit Z + cross-section genişlik
-# 4. refine_bones_raycast() → Raycasting ile Y ve X merkezleme
-# 5. cleanup_proxy()        → Proxy'yi sahneden sil
-# ════════════════════════════════════════════════════════════════════════
-
-def create_voxel_proxy(target_mesh, voxel_size=None):
-    """
-    Modelin katı, basitleştirilmiş Voxel kopyasını oluşturur.
-    
-    Voxel remesh:
-    - Açık kenarları kapatır (watertight mesh)
-    - Ekipman/aksesuar detaylarını yumuşatır
-    - Düz, uniform topoloji üretir → raycasting güvenilir olur
-    
-    Argümanlar:
-    - voxel_size: Voxel çözünürlüğü (metre). None ise mesh yüksekliğine
-      oransal otomatik hesap. Küçük = detaylı, büyük = yumuşak.
-    """
-    mesh_h, _ = get_mesh_dimensions(target_mesh)
-    if voxel_size is None:
-        # ~55-60 voxel yükseklik → ekipman yumuşar, kol ayrımı korunur
-        voxel_size = max(0.02, mesh_h * 0.018)
-    
-    bpy.ops.object.select_all(action='DESELECT')
-    target_mesh.select_set(True)
-    bpy.context.view_layer.objects.active = target_mesh
-    
-    bpy.ops.object.duplicate()
-    proxy = bpy.context.active_object
-    proxy.name = target_mesh.name + "_VOXEL_PROXY"
-    
-    remesh = proxy.modifiers.new(name="VoxelRemesh", type='REMESH')
-    remesh.mode = 'VOXEL'
-    remesh.voxel_size = voxel_size
-    bpy.ops.object.modifier_apply(modifier="VoxelRemesh")
-    
-    print(f"   📦 Voxel proxy oluşturuldu (voxel_size={voxel_size:.3f}, "
-          f"verts: {len(proxy.data.vertices)})")
-    return proxy
-
-
-def cleanup_proxy(proxy):
-    """Voxel proxy objesini sahneden sil."""
-    bpy.data.objects.remove(proxy, do_unlink=True)
-
-
-def raycast_world(obj, origin, direction):
-    """
-    Dünya koordinatlarında bir objeye raycast fırlatır.
-    
-    Argümanlar:
-    - obj: Hedef mesh objesi
-    - origin: Işının başlangıç noktası (Vector, dünya koordinatı)
-    - direction: Işın yönü (Vector, normalize edilecek)
-    
-    Dönüş:
-    - (True, hit_world_pos) veya (False, None)
-    """
-    matrix_inv = obj.matrix_world.inverted()
-    origin_local = matrix_inv @ origin
-    dir_local = (matrix_inv.to_3x3() @ direction).normalized()
-    
-    hit, loc_local, normal, face_idx = obj.ray_cast(origin_local, dir_local)
-    
-    if hit:
-        return True, obj.matrix_world @ loc_local
-    return False, None
-
-
-def raycast_find_center(proxy, point, axis, dist=5.0):
-    """
-    İki yönlü raycast ile bir noktanın belirli eksendeki hacim merkezini bulur.
-    
-    Yöntem:
-    - Meshin dışından iki karşıt yönde raycast at
-    - İki yüzey noktasının ortası = hacim merkezi
-    
-    Argümanlar:
-    - proxy: Voxel proxy mesh
-    - point: Merkezlenecek nokta (dünya koordinatı)
-    - axis: Eksen vektörü (örn. Vector((0,1,0)) = Y ekseni)
-    - dist: Raycast başlangıç uzaklığı (mesh dışına çıkmak için)
-    """
-    # + yönde: dışarıdan merkeze
-    hit_p, loc_p = raycast_world(proxy, point - axis * dist, axis)
-    # - yönde: dışarıdan merkeze
-    hit_n, loc_n = raycast_world(proxy, point + axis * dist, -axis)
-    
-    if hit_p and hit_n:
-        return (loc_p + loc_n) / 2.0
-    return None
-
-
-def refine_bones_with_raycast(proxy, rig):
-    """
-    Raycasting ile kemikleri mesh hacminin ortasına hizalar.
-    
-    Neden gerekli:
-    - Cross-section sadece X ekseninde genişlik ölçer
-    - Y ekseni (ön-arka) için sabit torso_y kullanılıyor → yanlış
-    - Raycasting ile her kemik gerçek hacim merkezine çekilir
-    
-    Her kemik noktası (head/tail) için:
-    1. Y ekseni (ön-arka): Her zaman merkezle
-    2. X ekseni (sağ-sol): Sadece uzuv kemikleri için (spine hariç)
-    """
-    print("🎯 Raycast ile kemik merkezleme başlatılıyor...")
-    
     select_only(rig)
     bpy.ops.object.mode_set(mode='EDIT')
     eb = rig.data.edit_bones
-    world = rig.matrix_world
-    world_inv = world.inverted()
     
-    axis_x = Vector((1, 0, 0))
-    axis_y = Vector((0, 1, 0))
+    print("[HESAP] Bölgesel ölçekleme + IK solve başlatılıyor...")
     
-    refined_count = 0
-    
-    def center_point_on_axis(bone_name, point_type, axis):
-        """Tek bir kemik noktasını belirtilen eksende mesh ortasına çeker."""
-        nonlocal refined_count
-        if bone_name not in eb:
-            return
+    # ══════════════════════════════════════════════════
+    # KOL ZİNCİRLERİ
+    # ══════════════════════════════════════════════════
+    for side in ['.L', '.R']:
+        ua_name = 'upper_arm' + side
+        fa_name = 'forearm' + side
+        ha_name = 'hand' + side
         
-        bone = eb[bone_name]
-        point = bone.head if point_type == 'head' else bone.tail
-        point_world = world @ point
+        if not all(n in eb for n in [ua_name, fa_name, ha_name]):
+            continue
         
-        center = raycast_find_center(proxy, point_world, axis)
-        if center:
-            center_local = world_inv @ center
-            if axis == axis_y:
-                point.y = center_local.y
-            elif axis == axis_x:
-                point.x = center_local.x
-            refined_count += 1
-    
-    # ── SPINE: Y merkezle (ön-arka hizalama) ──
-    # Omurga kemikleri gövdenin ön-arka ortasında olmalı
-    spine_names = ["spine", "spine.001", "spine.002", "spine.003", 
-                   "spine.004", "spine.005", "spine.006"]
-    for name in spine_names:
-        center_point_on_axis(name, 'head', axis_y)
-    # Son spine'ın tail'ini de merkezle
-    center_point_on_axis("spine.006", 'tail', axis_y)
-    
-    # Spine zincirini senkronize et (tail.y = sonraki head.y)
-    for i in range(len(spine_names) - 1):
-        curr = spine_names[i]
-        nxt = spine_names[i + 1]
-        if curr in eb and nxt in eb:
-            avg_y = (eb[curr].tail.y + eb[nxt].head.y) / 2
-            eb[curr].tail.y = avg_y
-            eb[nxt].head.y = avg_y
-    
-    # ── OMUZ: tail Y merkezle ──
-    for side in [".L", ".R"]:
-        center_point_on_axis("shoulder" + side, 'tail', axis_y)
-    
-    # ── KOL ZİNCİRİ: Y merkezle ──
-    for side in [".L", ".R"]:
-        for part in ["upper_arm", "forearm", "hand"]:
-            center_point_on_axis(part + side, 'head', axis_y)
-            center_point_on_axis(part + side, 'tail', axis_y)
-    
-    # ── BACAK ZİNCİRİ: Y merkezle ──
-    for side in [".L", ".R"]:
-        for part in ["thigh", "shin"]:
-            center_point_on_axis(part + side, 'head', axis_y)
-            center_point_on_axis(part + side, 'tail', axis_y)
-    
-    # ── PELVIS: tail Y merkezle ──
-    for side in [".L", ".R"]:
-        center_point_on_axis("pelvis" + side, 'tail', axis_y)
-    
-    # Bağlantı tutarlılığı: upper_arm.head = shoulder.tail
-    for side in [".L", ".R"]:
-        sh = "shoulder" + side
-        ua = "upper_arm" + side
-        if sh in eb and ua in eb:
-            eb[ua].head = eb[sh].tail.copy()
+        # Anchor'lar: omuz eklemi → el ucu (fit tarafından set edilmiş)
+        arm_start = eb[ua_name].head.copy()
+        arm_end = eb[ha_name].tail.copy()
         
-        # forearm.head = upper_arm.tail
-        fa = "forearm" + side
-        if ua in eb and fa in eb:
-            eb[fa].head = eb[ua].tail.copy()
+        total_dist = (arm_end - arm_start).length
+        if total_dist < 1e-6:
+            continue
         
-        # shin.head = thigh.tail
-        th = "thigh" + side
-        sn = "shin" + side
-        if th in eb and sn in eb:
-            eb[sn].head = eb[th].tail.copy()
+        # Template oranlarıyla kemik uzunluklarını hesapla
+        r_upper = chain_ratios.get('arm_upper' + side, 0.40)
+        r_fore = chain_ratios.get('arm_fore' + side, 0.35)
+        r_hand = chain_ratios.get('arm_hand' + side, 0.25)
+        
+        len_upper = total_dist * r_upper
+        len_fore = total_dist * r_fore
+        len_hand = total_dist * r_hand
+        
+        # Bilek: el ucundan hand uzunluğu kadar geri
+        wrist_pos = arm_end + (arm_start - arm_end).normalized() * len_hand
+        
+        # Dirsek: 2-Bone IK (omuz → bilek arası)
+        side_sign = 1.0 if side == '.L' else -1.0
+        pole_dir = Vector((side_sign * 0.1, 1.0, -0.3)).normalized()
+        
+        elbow_pos = solve_two_bone_ik(
+            arm_start, wrist_pos, len_upper, len_fore, pole_dir
+        )
+        
+        # Kemikleri yerleştir
+        eb[ua_name].tail = elbow_pos
+        eb[fa_name].head = elbow_pos
+        eb[fa_name].tail = wrist_pos
+        eb[ha_name].head = wrist_pos
+        # hand.tail = arm_end (zaten doğru)
+        
+        print(f"   [OK] Kol{side}: üst={len_upper:.3f} ön={len_fore:.3f} "
+              f"el={len_hand:.3f} (toplam={total_dist:.3f})")
+    
+    # ══════════════════════════════════════════════════
+    # BACAK ZİNCİRLERİ
+    # ══════════════════════════════════════════════════
+    for side in ['.L', '.R']:
+        th_name = 'thigh' + side
+        sn_name = 'shin' + side
+        ft_name = 'foot' + side
+        
+        if not all(n in eb for n in [th_name, sn_name]):
+            continue
+        
+        # Anchor'lar: kalça eklemi → ayak bileği
+        leg_start = eb[th_name].head.copy()
+        leg_end = eb[sn_name].tail.copy()
+        
+        total_dist = (leg_end - leg_start).length
+        if total_dist < 1e-6:
+            continue
+        
+        # Template oranları
+        r_thigh = chain_ratios.get('leg_thigh' + side, 0.52)
+        r_shin = chain_ratios.get('leg_shin' + side, 0.48)
+        
+        len_thigh = total_dist * r_thigh
+        len_shin = total_dist * r_shin
+        
+        # Diz: 2-Bone IK (kalça → ayak bileği arası)
+        # Pole: diz ÖNE kırılır (Y-)
+        pole_dir = Vector((0.0, -1.0, 0.0)).normalized()
+        
+        knee_pos = solve_two_bone_ik(
+            leg_start, leg_end, len_thigh, len_shin, pole_dir
+        )
+        
+        # Kemikleri yerleştir
+        eb[th_name].tail = knee_pos
+        eb[sn_name].head = knee_pos
+        # shin.tail = leg_end (zaten doğru)
+        
+        # Foot bağlantısı
+        if ft_name in eb:
+            eb[ft_name].head = leg_end
+        
+        print(f"   [OK] Bacak{side}: üst={len_thigh:.3f} alt={len_shin:.3f} "
+              f"(toplam={total_dist:.3f})")
+    
+    # ══════════════════════════════════════════════════
+    # OMURGA ZİNCİRİ
+    #
+    # Mevcut fitting omurgayı eşit aralıkla dağıtıyor.
+    # Template'te alt omurga kemikleri genelde daha uzun,
+    # üst olanlar kısa olur. Bu oranları geri yüklüyoruz.
+    # ══════════════════════════════════════════════════
+    spine_names = ['spine', 'spine.001', 'spine.002', 'spine.003',
+                   'spine.004', 'spine.005', 'spine.006']
+    
+    existing = [n for n in spine_names if n in eb]
+    if len(existing) >= 2:
+        spine_start = eb[existing[0]].head.copy()
+        spine_end = eb[existing[-1]].tail.copy()
+        
+        # Spine X ve Y sabit tutulmalı, sadece Z dağılımı değişir
+        cx = spine_start.x
+        cy = spine_start.y
+        z_start = spine_start.z
+        z_end = spine_end.z
+        total_z = z_end - z_start
+        
+        if abs(total_z) > 1e-6:
+            # Template oranlarını oku
+            total_ratio = 0.0
+            seg_ratios = []
+            for name in existing:
+                r = chain_ratios.get('spine_' + name, 1.0 / len(existing))
+                seg_ratios.append(r)
+                total_ratio += r
+            
+            # Normalize et ve Z noktalarını hesapla
+            cumulative = 0.0
+            points = [z_start]
+            for r in seg_ratios:
+                cumulative += r / total_ratio
+                points.append(z_start + total_z * cumulative)
+            
+            for i, name in enumerate(existing):
+                eb[name].head = Vector((cx, cy, points[i]))
+                eb[name].tail = Vector((cx, cy, points[i + 1]))
+            
+            print(f"   [OK] Omurga: {len(existing)} kemik template oranlarıyla dağıtıldı")
     
     bpy.ops.object.mode_set(mode='OBJECT')
-    print(f"   🎯 Raycast: {refined_count} nokta merkezlendi")
+    print("[HESAP] Bölgesel ölçekleme tamamlandı.")
 
 
 # ════════════════════════════════════════════════════════════════════════
 #                      KEMİK OTURTMA (FITTING)
 # ════════════════════════════════════════════════════════════════════════
+
 
 def fit_bones_to_anatomy(mesh, rig, proxy_mesh=None):
     """
@@ -359,13 +205,13 @@ def fit_bones_to_anatomy(mesh, rig, proxy_mesh=None):
     Eğer proxy_mesh verilmişse, landmark tespiti proxy üzerinde yapılır.
     Bu sayede ekipman detayları yumuşatılmış mesh'ten ölçüm yapılır.
     """
-    print("🦴 Cross-Section Kemik Oturtma (Fitting) başlatılıyor...")
+    print("[SİSTEM] Cross-Section Kemik Oturtma (Fitting) başlatılıyor...")
 
     # Landmark tespiti: proxy varsa proxy'den, yoksa orijinal mesh'ten
     analysis_mesh = proxy_mesh if proxy_mesh else mesh
     lm = detect_humanoid_landmarks(analysis_mesh)
     if not lm:
-        print("⚠️ Landmark tespiti başarısız, kemik fitting atlandı.")
+        print("[UYARI] Landmark tespiti başarısız, kemik fitting atlandı.")
         return False
 
     select_only(rig)
@@ -429,7 +275,7 @@ def fit_bones_to_anatomy(mesh, rig, proxy_mesh=None):
     # Diz
     knee_z = clamp_z(cs_knee_z, 0.24, 0.32, "Diz")
     
-    print(f"📐 Hibrit Z seviyeleri (cross-section + clamp):")
+    print(f"[ÖLÇÜM] Hibrit Z seviyeleri (cross-section + clamp):")
     print(f"   Omuz:   {shoulder_z:.4f} (%{(shoulder_z-z_min)/mesh_h*100:.0f})")
     print(f"   Boyun:  {neck_z:.4f} (%{(neck_z-z_min)/mesh_h*100:.0f})")
     print(f"   Spine:  {spine_root_z:.4f} (%{(spine_root_z-z_min)/mesh_h*100:.0f})")
@@ -666,13 +512,13 @@ def fit_bones_to_anatomy(mesh, rig, proxy_mesh=None):
     # LOG
     # ================================================================
     print(
-        f"ℹ️ Fitting: shoulder_inset={shoulder_inset:.3f}, "
+        f"[BİLGİ] Fitting: shoulder_inset={shoulder_inset:.3f}, "
         f"hip_width={hip_half_width*2:.4f}, "
         f"waist_width={waist_width:.4f}"
     )
 
     bpy.ops.object.mode_set(mode='OBJECT')
-    print("🦴 Kemikler yeni pozisyonlarına kilitlendi.")
+    print("[SİSTEM] Kemikler yeni pozisyonlarına kilitlendi.")
     return True
 
 
@@ -702,10 +548,10 @@ def auto_rig_advanced():
     # === 1. Hedef Mesh ===
     target_mesh = pick_target_mesh()
     if not target_mesh:
-        print("❌ Sahnede mesh bulunamadı.")
+        print("[HATA] Sahnede mesh bulunamadı.")
         return
     
-    print(f"🎯 Hedef mesh: {target_mesh.name}")
+    print(f"[OK] Hedef mesh: {target_mesh.name}")
     
     select_only(target_mesh)
     bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
@@ -715,10 +561,10 @@ def auto_rig_advanced():
     
     # === 3. Ölçüler ve Pose Tespiti ===
     mesh_height, _ = get_mesh_dimensions(target_mesh)
-    print(f"📏 Mesh yüksekliği: {mesh_height:.4f}")
+    print(f"[HESAP] Mesh yüksekliği: {mesh_height:.4f}")
     
     # === 4. Voxel Proxy Oluştur ===
-    print("📦 Voxel proxy oluşturuluyor...")
+    print("[OK] Voxel proxy oluşturuluyor...")
     ensure_object_mode()
     voxel_proxy = create_voxel_proxy(target_mesh)
     ensure_object_mode()
@@ -728,13 +574,13 @@ def auto_rig_advanced():
     
     selected_rig = RIG_FILE_A if pose_type == 'A_POSE' else RIG_FILE_T
     rig_path = os.path.join(TEMPLATE_DIR, selected_rig)
-    print(f"📂 Seçilen template rig: {selected_rig}")
+    print(f"[BİLGİ] Seçilen template rig: {selected_rig}")
     
     # === 5. Template Rig'i Sahneye Ekle ===
     custom_rig = append_custom_rig(rig_path, RIG_OBJECT_NAME)
     
     if not custom_rig:
-        print("❌ Template rig sahneye eklenemedi.")
+        print("[HATA] Template rig sahneye eklenemedi.")
         cleanup_proxy(voxel_proxy)
         return
     custom_rig.location = (0, 0, 0)
@@ -744,23 +590,31 @@ def auto_rig_advanced():
     rig_height, _ = get_mesh_dimensions(custom_rig)
     
     if rig_height <= 1e-6:
-        print("❌ Rig yüksekliği hesaplanamadı.")
+        print("[HATA] Rig yüksekliği hesaplanamadı.")
         cleanup_proxy(voxel_proxy)
         return
 
     scale_factor = (mesh_height / rig_height) * 0.92
     scale_factor = max(0.20, min(scale_factor, 8.00))
     custom_rig.scale = (scale_factor, scale_factor, scale_factor)
-    print(f"📐 Ölçek faktörü: {scale_factor:.4f}")
+    print(f"[ÖLÇÜM] Ölçek faktörü: {scale_factor:.4f}")
     
     select_only(custom_rig)
     bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
 
+    # === 6.5. Template Oranlarını Çıkar (scale sonrası, fit öncesi) ===
+    chain_ratios = extract_chain_ratios(custom_rig)
+
     # === 7. Kemikleri Anatomik Noktalara Otur (Proxy üzerinden) ===
     fit_ok = fit_bones_to_anatomy(target_mesh, custom_rig, proxy_mesh=voxel_proxy)
     if not fit_ok:
-        print("⚠️ Fitting atlandı, yalnızca template ölçeklenerek devam ediliyor.")
+        print("[UYARI] Fitting atlandı, yalnızca template ölçeklenerek devam ediliyor.")
     
+    # === 7.5. Bölgesel Ölçekleme + IK Solve ===
+    if fit_ok:
+        ensure_object_mode()
+        apply_regional_scaling(custom_rig, chain_ratios)
+
     # === 8. Raycasting ile Kemikleri Hacim Ortasına Merkezle ===
     if fit_ok:
         ensure_object_mode()
@@ -769,7 +623,7 @@ def auto_rig_advanced():
     # === 9. Voxel Proxy Temizliği ===
     ensure_object_mode()
     cleanup_proxy(voxel_proxy)
-    print("🗑️ Voxel proxy temizlendi.")
+    print("[BİLGİ] Voxel proxy temizlendi.")
 
     # === 10. Skinning (Deri Giydirme) ===
     ensure_object_mode()
@@ -778,22 +632,22 @@ def auto_rig_advanced():
     custom_rig.select_set(True)
     bpy.context.view_layer.objects.active = custom_rig
     
-    print("⚙️ Otomatik Ağırlıklandırma (Skinning) yapılıyor...")
+    print("[OK] Otomatik Ağırlıklandırma (Skinning) yapılıyor...")
     try:
         bpy.ops.object.parent_set(type='ARMATURE_AUTO')
-        print("🎉 Voxel+Raycast Auto-Rigging Başarıyla Tamamlandı!\n")
+        print("[BAŞARILI] Voxel+Raycast Auto-Rigging Başarıyla Tamamlandı!\n")
     except Exception as e:
-        print(f"⚠️ ARMATURE_AUTO başarısız: {e}")
-        print("↪️ ARMATURE_NAME fallback deneniyor...")
+        print(f"[UYARI] ARMATURE_AUTO başarısız: {e}")
+        print("[OK] ARMATURE_NAME fallback deneniyor...")
         bpy.ops.object.select_all(action='DESELECT')
         target_mesh.select_set(True)
         custom_rig.select_set(True)
         bpy.context.view_layer.objects.active = custom_rig
         try:
             bpy.ops.object.parent_set(type='ARMATURE_NAME')
-            print("✅ Fallback ile parent kuruldu (weights manuel/sonradan düzeltilebilir).")
+            print("[OK] Fallback ile parent kuruldu (weights manuel/sonradan düzeltilebilir).")
         except Exception as e2:
-            print(f"❌ Fallback de başarısız: {e2}")
+            print(f"[HATA] Fallback de başarısız: {e2}")
 
 if __name__ == "__main__":
     auto_rig_advanced()
