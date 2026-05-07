@@ -4,14 +4,10 @@ Cross-Section Anatomical Analyzer
 Mesh'i dilimleyerek genişlik/yükseklik profilini çıkarır ve
 anatomik noktaları (landmark) otomatik olarak tespit eder.
 
-Hem insansı (humanoid) hem dört bacaklı (quadruped) modellerde
-kullanılacak ortak analiz modülüdür.
-
-YÖNTEM (v2 — Hibrit):
-    Cross-section profili + anatomik oranlar birlikte kullanılır.
-    Boyun tespiti cross-section'dan (en güvenilir nokta),
-    omuz tespiti boyundan anatomik oran ile (%7 aşağı),
-    bel/kalça cross-section doğrulamasıyla.
+Cross-section profili + anatomik oranlar birlikte kullanılır.
+Boyun tespiti cross-section'dan (en güvenilir nokta),
+omuz tespiti boyundan anatomik oran ile (%7 aşağı),
+bel/kalça cross-section doğrulamasıyla.
 """
 
 import bpy
