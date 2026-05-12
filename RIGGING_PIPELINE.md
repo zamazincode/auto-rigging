@@ -197,7 +197,7 @@ To convert between them, we use the object's **transformation matrix** (`matrix_
 │ Rx·Sx  Ry·Sx  Rz·Sx  Tx │    R = rotation components
 │ Rx·Sy  Ry·Sy  Rz·Sy  Ty │    S = scale components
 │ Rx·Sz  Ry·Sz  Rz·Sz  Tz │    T = translation components
-│   0      0      0     1  │
+│   0      0      0     1 │
 └                         ┘
 ```
 
@@ -319,7 +319,8 @@ The humanoid pipeline is the main entry point: `humanoid/rigging.py::auto_rig_ad
 └────────┬────────┘
          ▼
 ┌─────────────────┐
-│ 2. Apply Transforms │  bpy.ops.object.transform_apply()
+│  2. Apply       │  bpy.ops.object.transform_apply()
+│   Transforms    │
 └────────┬────────┘
          ▼
 ┌─────────────────┐
