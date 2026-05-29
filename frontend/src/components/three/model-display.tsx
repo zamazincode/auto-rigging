@@ -42,28 +42,24 @@ function normalizeModel(object: THREE.Object3D) {
 // Apply default material if the model has no textures
 function applyDefaultMaterialIfNeeded(object: THREE.Object3D) {
 	const defaultMat = createDefaultMaterial();
-	let hasTexture = false;
 
 	object.traverse((child) => {
 		if (child instanceof THREE.Mesh) {
-			const mat = child.material as THREE.MeshStandardMaterial;
-			if (mat && mat.map) {
-				hasTexture = true;
+			if (Array.isArray(child.material)) {
+				// If none of the materials in the array have a texture map, replace them all with default
+				const hasAnyTexture = child.material.some(
+					(mat) => (mat as THREE.MeshStandardMaterial).map
+				);
+				if (!hasAnyTexture) {
+					child.material = defaultMat;
+				}
+			} else {
+				const mat = child.material as THREE.MeshStandardMaterial;
+				if (!mat || !mat.map) {
+					child.material = defaultMat;
+				}
 			}
-		}
-	});
 
-	if (!hasTexture) {
-		object.traverse((child) => {
-			if (child instanceof THREE.Mesh) {
-				child.material = defaultMat;
-			}
-		});
-	}
-
-	// Enable shadows on all meshes
-	object.traverse((child) => {
-		if (child instanceof THREE.Mesh) {
 			child.castShadow = true;
 			child.receiveShadow = true;
 		}
@@ -161,36 +157,50 @@ export default function ModelDisplay({
 		}
 
 		if (showSkeleton) {
-			// Find skeleton in the loaded model
-			group.traverse((child) => {
-				if (child instanceof THREE.SkinnedMesh && child.skeleton) {
-					const helper = new THREE.SkeletonHelper(child);
-					(helper.material as THREE.LineBasicMaterial).linewidth = 2;
-					scene.add(helper);
-					skeletonHelperRef.current = helper;
-				}
-			});
+			// Create a skeleton helper for the entire group
+			// This automatically finds all THREE.Bone objects within the hierarchy
+			const helper = new THREE.SkeletonHelper(group);
+			
+			// Style the bones so they are highly visible
+			const mat = helper.material as THREE.LineBasicMaterial;
+			mat.linewidth = 3;
+			mat.color = new THREE.Color("#00ffcc"); // Bright cyan
+			mat.depthTest = false; // Render on top of meshes
+			mat.transparent = true;
+			
+			scene.add(helper);
+			skeletonHelperRef.current = helper;
 
-			// Make meshes semi-transparent when showing skeleton
+			// Make meshes wireframe when showing skeleton
 			group.traverse((child) => {
 				if (child instanceof THREE.Mesh) {
-					const mat = child.material as THREE.MeshStandardMaterial;
-					if (mat) {
-						mat.transparent = true;
-						mat.opacity = 0.4;
-						mat.needsUpdate = true;
+					if (Array.isArray(child.material)) {
+						child.material.forEach((mat) => {
+							if (mat) {
+								mat.wireframe = true;
+								mat.needsUpdate = true;
+							}
+						});
+					} else if (child.material) {
+						child.material.wireframe = true;
+						child.material.needsUpdate = true;
 					}
 				}
 			});
 		} else {
-			// Restore mesh opacity
+			// Restore solid mesh
 			group.traverse((child) => {
 				if (child instanceof THREE.Mesh) {
-					const mat = child.material as THREE.MeshStandardMaterial;
-					if (mat) {
-						mat.transparent = false;
-						mat.opacity = 1;
-						mat.needsUpdate = true;
+					if (Array.isArray(child.material)) {
+						child.material.forEach((mat) => {
+							if (mat) {
+								mat.wireframe = false;
+								mat.needsUpdate = true;
+							}
+						});
+					} else if (child.material) {
+						child.material.wireframe = false;
+						child.material.needsUpdate = true;
 					}
 				}
 			});

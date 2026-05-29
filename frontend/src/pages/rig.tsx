@@ -3,6 +3,7 @@ import { SUPPORTED_FORMATS, type ViewMode } from "../types";
 import ModelViewer, { type ModelViewerHandle } from "../components/three/model-viewer";
 import ModelDisplay from "../components/three/model-display";
 import ViewerControls from "../components/three/viewer-controls";
+import ProcessingOverlay from "../components/ui/processing-overlay";
 import { useRigging } from "../hooks/use-rigging";
 
 export default function Rig() {
@@ -76,6 +77,20 @@ export default function Rig() {
 		setViewMode("orbit");
 		if (fileInputRef.current) fileInputRef.current.value = "";
 	}, [reset]);
+
+	const handleDownload = useCallback(() => {
+		if (state.resultUrl && state.file) {
+			const a = document.createElement("a");
+			a.href = state.resultUrl;
+			const nameWithoutExt =
+				state.file.name.substring(0, state.file.name.lastIndexOf(".")) ||
+				state.file.name;
+			a.download = `${nameWithoutExt}_rigged.fbx`;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+		}
+	}, [state.resultUrl, state.file]);
 
 	return (
 		<main className="flex flex-1 overflow-hidden">
@@ -176,6 +191,22 @@ export default function Rig() {
 									</button>
 								)}
 
+								{state.status === "completed" && (
+									<button
+										onClick={handleDownload}
+										className="bg-primary hover:bg-primary-light text-primary-content 
+											px-4 py-1.5 rounded-lg text-sm font-semibold shadow-lg shadow-primary/20
+											transition-all duration-200 active:scale-95 flex items-center gap-2"
+									>
+										<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+											<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+											<polyline points="7 10 12 15 17 10" />
+											<line x1="12" y1="15" x2="12" y2="3" />
+										</svg>
+										<span>Download FBX</span>
+									</button>
+								)}
+
 								<button
 									onClick={handleReset}
 									disabled={state.status === "processing"}
@@ -207,6 +238,44 @@ export default function Rig() {
 							onToggleSkeleton={() => setShowSkeleton((s) => !s)}
 							onResetCamera={() => viewerRef.current?.resetCamera()}
 						/>
+
+						{/* Processing Overlay */}
+						{state.status === "processing" && (
+							<ProcessingOverlay stage={state.processingStage} />
+						)}
+
+						{/* Error Overlay */}
+						{state.status === "error" && (
+							<div className="absolute inset-0 z-50 glass-strong flex items-center justify-center animate-fade-in">
+								<div className="w-full max-w-sm p-6 rounded-3xl bg-foreground shadow-2xl border border-error/20 flex flex-col items-center text-center">
+									<div className="w-12 h-12 rounded-full bg-error/10 flex items-center justify-center text-error mb-4">
+										<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+											<circle cx="12" cy="12" r="10" />
+											<line x1="12" y1="8" x2="12" y2="12" />
+											<line x1="12" y1="16" x2="12.01" y2="16" />
+										</svg>
+									</div>
+									<p className="text-sm font-semibold text-copy mb-2">Rigging Failed</p>
+									<p className="text-xs text-copy-light mb-6">
+										{state.errorMessage || "An unexpected error occurred during processing."}
+									</p>
+									<div className="flex w-full gap-3">
+										<button
+											onClick={handleReset}
+											className="flex-1 py-2 rounded-xl text-sm font-medium text-copy-light bg-background hover:text-copy hover:bg-border transition-colors"
+										>
+											Cancel
+										</button>
+										<button
+											onClick={startProcessing}
+											className="flex-1 py-2 rounded-xl text-sm font-semibold text-error-content bg-error hover:opacity-90 transition-opacity"
+										>
+											Try Again
+										</button>
+									</div>
+								</div>
+							</div>
+						)}
 					</div>
 				) : (
 					/* ===== Upload Zone State ===== */
