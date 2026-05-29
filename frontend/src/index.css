@@ -34,10 +34,175 @@
 	--color-success-content: #b5cab5;
 	--color-warning-content: #cacab5;
 	--color-error-content: #cab5b5;
+
+	/* Animations */
+	--animate-fade-in: fade-in 0.5s ease-out forwards;
+	--animate-slide-up: slide-up 0.5s ease-out forwards;
+	--animate-pulse-glow: pulse-glow 2s ease-in-out infinite;
+	--animate-skeleton-shimmer: skeleton-shimmer 1.8s ease-in-out infinite;
+	--animate-spin-slow: spin-slow 3s linear infinite;
+	--animate-draw-stroke: draw-stroke 2s ease-in-out forwards;
+	--animate-bounce-subtle: bounce-subtle 2s ease-in-out infinite;
 }
 
+/* ===== Dark Theme Overrides ===== */
+.dark {
+	--color-primary: #5b8a82;
+	--color-primary-content: #c8e0dc;
+	--color-primary-dark: #3d6b64;
+	--color-primary-light: #7aada5;
+
+	--color-secondary: #6b5b8a;
+	--color-secondary-content: #d0c8e0;
+	--color-secondary-dark: #4d3d6b;
+	--color-secondary-light: #8a7aad;
+
+	--color-background: #111118;
+	--color-foreground: #1a1a24;
+	--color-border: #2a2a3a;
+
+	--color-copy: #e8e8ec;
+	--color-copy-light: #a0a0b0;
+	--color-copy-lighter: #707080;
+
+	--color-success: #4a7a4a;
+	--color-warning: #7a7a4a;
+	--color-error: #7a4a4a;
+
+	--color-success-content: #c8e0c8;
+	--color-warning-content: #e0e0c8;
+	--color-error-content: #e0c8c8;
+}
+
+/* ===== Base Layer ===== */
 @layer base {
+	*,
+	*::before,
+	*::after {
+		box-sizing: border-box;
+		margin: 0;
+		padding: 0;
+	}
+
+	html {
+		scroll-behavior: smooth;
+		-webkit-font-smoothing: antialiased;
+		-moz-osx-font-smoothing: grayscale;
+	}
+
+	body {
+		font-family: var(--font-poppins);
+		background-color: var(--color-background);
+		color: var(--color-copy);
+		transition:
+			background-color 0.3s ease,
+			color 0.3s ease;
+		min-height: 100dvh;
+	}
+
+	#root {
+		min-height: 100dvh;
+		display: flex;
+		flex-direction: column;
+	}
+
+	a {
+		color: inherit;
+		text-decoration: none;
+	}
+
+	button {
+		cursor: pointer;
+		border: none;
+		background: none;
+		font-family: inherit;
+		color: inherit;
+	}
 }
 
+/* ===== Component Layer ===== */
 @layer components {
+	.glass {
+		background: color-mix(in srgb, var(--color-foreground) 70%, transparent);
+		backdrop-filter: blur(12px);
+		-webkit-backdrop-filter: blur(12px);
+		border: 1px solid color-mix(in srgb, var(--color-border) 50%, transparent);
+	}
+
+	.glass-strong {
+		background: color-mix(in srgb, var(--color-foreground) 85%, transparent);
+		backdrop-filter: blur(20px);
+		-webkit-backdrop-filter: blur(20px);
+		border: 1px solid var(--color-border);
+	}
+}
+
+/* ===== Keyframes ===== */
+@keyframes fade-in {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes slide-up {
+	from {
+		opacity: 0;
+		transform: translateY(20px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes pulse-glow {
+	0%,
+	100% {
+		opacity: 0.6;
+		filter: brightness(1);
+	}
+	50% {
+		opacity: 1;
+		filter: brightness(1.3);
+	}
+}
+
+@keyframes skeleton-shimmer {
+	0% {
+		background-position: -200% 0;
+	}
+	100% {
+		background-position: 200% 0;
+	}
+}
+
+@keyframes spin-slow {
+	from {
+		transform: rotate(0deg);
+	}
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+@keyframes draw-stroke {
+	from {
+		stroke-dashoffset: 1000;
+	}
+	to {
+		stroke-dashoffset: 0;
+	}
+}
+
+@keyframes bounce-subtle {
+	0%,
+	100% {
+		transform: translateY(0);
+	}
+	50% {
+		transform: translateY(-6px);
+	}
 }

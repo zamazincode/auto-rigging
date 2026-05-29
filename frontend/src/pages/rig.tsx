@@ -1,0 +1,294 @@
+import { useState, useRef, useCallback } from "react";
+import { SUPPORTED_FORMATS, type ViewMode } from "../types";
+import ModelViewer, { type ModelViewerHandle } from "../components/three/model-viewer";
+import ModelDisplay from "../components/three/model-display";
+import ViewerControls from "../components/three/viewer-controls";
+import { useRigging } from "../hooks/use-rigging";
+
+export default function Rig() {
+	const { state, setFile, startProcessing, reset } = useRigging();
+	const [isDragOver, setIsDragOver] = useState(false);
+	const fileInputRef = useRef<HTMLInputElement>(null);
+	const viewerRef = useRef<ModelViewerHandle>(null);
+
+	const [viewMode, setViewMode] = useState<ViewMode>("orbit");
+	const [showSkeleton, setShowSkeleton] = useState(false);
+
+	const isValidFile = useCallback((f: File) => {
+		const ext = "." + f.name.split(".").pop()?.toLowerCase();
+		return SUPPORTED_FORMATS.includes(ext as any);
+	}, []);
+
+	const handleFile = useCallback(
+		(f: File) => {
+			if (!isValidFile(f)) {
+				alert(
+					`Unsupported format. Please use: ${SUPPORTED_FORMATS.join(", ")}`
+				);
+				return;
+			}
+			// Create object URL for the 3D model
+			const url = URL.createObjectURL(f);
+			setFile(f, url);
+		},
+		[isValidFile, setFile]
+	);
+
+	const handleDragOver = useCallback((e: React.DragEvent) => {
+		e.preventDefault();
+		e.stopPropagation();
+		setIsDragOver(true);
+	}, []);
+
+	const handleDragLeave = useCallback((e: React.DragEvent) => {
+		e.preventDefault();
+		e.stopPropagation();
+		setIsDragOver(false);
+	}, []);
+
+	const handleDrop = useCallback(
+		(e: React.DragEvent) => {
+			e.preventDefault();
+			e.stopPropagation();
+			setIsDragOver(false);
+
+			const droppedFile = e.dataTransfer.files[0];
+			if (droppedFile) handleFile(droppedFile);
+		},
+		[handleFile]
+	);
+
+	const handleInputChange = useCallback(
+		(e: React.ChangeEvent<HTMLInputElement>) => {
+			const selected = e.target.files?.[0];
+			if (selected) handleFile(selected);
+		},
+		[handleFile]
+	);
+
+	const handleUploadClick = useCallback(() => {
+		fileInputRef.current?.click();
+	}, []);
+
+	const handleReset = useCallback(() => {
+		reset();
+		setShowSkeleton(false);
+		setViewMode("orbit");
+		if (fileInputRef.current) fileInputRef.current.value = "";
+	}, [reset]);
+
+	return (
+		<main className="flex flex-1 overflow-hidden">
+			{/* Left Sidebar — Animations Panel (placeholder) */}
+			<aside
+				className="w-[280px] min-w-[280px] border-r border-border bg-foreground
+					flex flex-col overflow-y-auto"
+			>
+				{/* Sidebar Header */}
+				<div className="px-5 py-4 border-b border-border">
+					<h2 className="text-sm font-semibold tracking-wide uppercase text-copy-light">
+						Animations
+					</h2>
+				</div>
+
+				{/* Placeholder Content */}
+				<div className="flex-1 flex items-center justify-center p-6">
+					<div className="text-center space-y-4">
+						<div className="mx-auto w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center animate-bounce-subtle">
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								width="28"
+								height="28"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								strokeWidth="1.5"
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								className="text-primary"
+							>
+								<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+								<circle cx="12" cy="13" r="3" />
+							</svg>
+						</div>
+						<div className="space-y-2">
+							<p className="text-sm font-medium text-copy">Coming Soon</p>
+							<p className="text-xs text-copy-lighter leading-relaxed">
+								Apply pre-built animations to your rigged model. This feature is
+								under development.
+							</p>
+						</div>
+						<div
+							className="h-1 w-24 mx-auto rounded-full"
+							style={{
+								background:
+									"linear-gradient(90deg, transparent, var(--color-primary-light), transparent)",
+								backgroundSize: "200% 100%",
+								animation: "skeleton-shimmer 1.8s ease-in-out infinite",
+							}}
+						/>
+					</div>
+				</div>
+			</aside>
+
+			{/* Right Area — 3D Viewport / Upload Zone */}
+			<section className="flex-1 relative bg-background flex flex-col">
+				{/* Hidden file input */}
+				<input
+					ref={fileInputRef}
+					type="file"
+					accept=".obj,.fbx,.glb,.gltf"
+					onChange={handleInputChange}
+					className="hidden"
+				/>
+
+				{state.status !== "idle" && state.file ? (
+					/* ===== Model Loaded State (Preview, Processing, Completed) ===== */
+					<div className="flex-1 relative flex items-center justify-center">
+						{/* Top bar with file info and actions */}
+						<div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-4 py-3">
+							<div className="flex items-center gap-3">
+								<div className="glass rounded-lg px-3 py-1.5 flex items-center gap-2">
+									<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+										<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+										<polyline points="14 2 14 8 20 8" />
+									</svg>
+									<span className="text-xs font-medium text-copy">{state.file.name}</span>
+									<span className="text-xs text-copy-lighter">
+										({(state.file.size / 1024 / 1024).toFixed(2)} MB)
+									</span>
+								</div>
+							</div>
+
+							<div className="flex items-center gap-2">
+								{state.status === "previewing" && (
+									<button
+										onClick={startProcessing}
+										className="bg-primary hover:bg-primary-light text-primary-content 
+											px-4 py-1.5 rounded-lg text-sm font-semibold shadow-lg shadow-primary/20
+											transition-all duration-200 active:scale-95 flex items-center gap-2"
+									>
+										<span>Auto-Rig</span>
+										<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+											<path d="M5 12h14" />
+											<path d="M12 5l7 7-7 7" />
+										</svg>
+									</button>
+								)}
+
+								<button
+									onClick={handleReset}
+									disabled={state.status === "processing"}
+									className="glass rounded-lg px-3 py-1.5 text-xs font-medium
+										text-copy-light hover:text-copy hover:bg-foreground/80
+										transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+								>
+									Upload New
+								</button>
+							</div>
+						</div>
+
+						{/* 3D Viewport */}
+						<div className="absolute inset-0">
+							<ModelViewer ref={viewerRef} viewMode={viewMode}>
+								<ModelDisplay
+									url={state.status === "completed" ? state.resultUrl! : state.previewUrl!}
+									fileName={state.status === "completed" ? "rigged.fbx" : state.file.name}
+									showSkeleton={showSkeleton}
+								/>
+							</ModelViewer>
+						</div>
+
+						{/* Viewer Controls */}
+						<ViewerControls
+							viewMode={viewMode}
+							showSkeleton={showSkeleton}
+							onViewModeChange={setViewMode}
+							onToggleSkeleton={() => setShowSkeleton((s) => !s)}
+							onResetCamera={() => viewerRef.current?.resetCamera()}
+						/>
+					</div>
+				) : (
+					/* ===== Upload Zone State ===== */
+					<div className="flex-1 flex items-center justify-center p-8">
+						<div
+							onDragOver={handleDragOver}
+							onDragLeave={handleDragLeave}
+							onDrop={handleDrop}
+							onClick={handleUploadClick}
+							className={`
+								relative w-full max-w-xl aspect-[4/3] rounded-2xl
+								border-2 border-dashed cursor-pointer
+								flex flex-col items-center justify-center gap-5
+								transition-all duration-300 ease-out
+								${
+									isDragOver
+										? "border-primary bg-primary/5 scale-[1.02] shadow-lg shadow-primary/10"
+										: "border-border hover:border-primary-light hover:bg-foreground/50"
+								}
+							`}
+						>
+							{/* Upload Icon */}
+							<div
+								className={`
+									w-20 h-20 rounded-2xl flex items-center justify-center
+									transition-all duration-300
+									${isDragOver ? "bg-primary/15 scale-110" : "bg-foreground"}
+								`}
+							>
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									width="36"
+									height="36"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									strokeWidth="1.5"
+									strokeLinecap="round"
+									strokeLinejoin="round"
+									className={`transition-colors duration-300 ${
+										isDragOver ? "text-primary" : "text-copy-lighter"
+									}`}
+								>
+									<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+									<polyline points="17 8 12 3 7 8" />
+									<line x1="12" y1="3" x2="12" y2="15" />
+								</svg>
+							</div>
+
+							{/* Text */}
+							<div className="text-center space-y-2">
+								<p className="text-sm font-medium text-copy">
+									{isDragOver
+										? "Drop your model here"
+										: "Drag & drop your 3D model"}
+								</p>
+								<p className="text-xs text-copy-lighter">
+									or click to browse files
+								</p>
+							</div>
+
+							{/* Format badges */}
+							<div className="flex items-center gap-2">
+								{SUPPORTED_FORMATS.map((fmt) => (
+									<span
+										key={fmt}
+										className="px-2.5 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider
+											bg-foreground text-copy-light border border-border"
+									>
+										{fmt.replace(".", "")}
+									</span>
+								))}
+							</div>
+
+							{/* Drag-over ring effect */}
+							{isDragOver && (
+								<div className="absolute inset-0 rounded-2xl border-2 border-primary/30 animate-pulse-glow pointer-events-none" />
+							)}
+						</div>
+					</div>
+				)}
+			</section>
+		</main>
+	);
+}
