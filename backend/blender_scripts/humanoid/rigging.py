@@ -555,6 +555,7 @@ def auto_rig_advanced():
     
     select_only(target_mesh)
     bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
+    bpy.context.view_layer.update()
     
     # === 2. Mesh Ön İşleme ===
     preprocess_mesh(target_mesh)
@@ -601,6 +602,7 @@ def auto_rig_advanced():
     
     select_only(custom_rig)
     bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    bpy.context.view_layer.update()
 
     # === 6.5. Template Oranlarını Çıkar (scale sonrası, fit öncesi) ===
     chain_ratios = extract_chain_ratios(custom_rig)
