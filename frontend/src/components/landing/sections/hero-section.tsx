@@ -21,46 +21,35 @@ export default function HeroSection() {
 				.from(
 					"[data-hero-heading]",
 					{ opacity: 0, y: 40, duration: 0.8, ease: "power3.out" },
-					"-=0.3"
+					"-=0.3",
 				)
 				.from(
 					"[data-hero-paragraph]",
 					{ opacity: 0, y: 30, duration: 0.7, ease: "power3.out" },
-					"-=0.4"
+					"-=0.4",
 				)
 				.from(
 					"[data-hero-buttons]",
 					{ opacity: 0, y: 20, duration: 0.6, ease: "power3.out" },
-					"-=0.3"
+					"-=0.3",
 				)
 				.from(
 					"[data-hero-scroll]",
 					{ opacity: 0, duration: 0.8, ease: "power2.out" },
-					"-=0.2"
+					"-=0.2",
 				);
 		},
-		{ scope: sectionRef }
+		{ scope: sectionRef },
 	);
 
 	return (
 		<section
 			ref={sectionRef}
 			id="hero"
-			className="relative mt-24 flex items-center pointer-events-auto"
+			className="relative mt-24 pb-24 flex items-center pointer-events-auto"
 		>
-			<div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 md:px-12 py-20">
-				<div className="max-w-md sm:max-w-lg md:max-w-xl glass-card">
-					{/* Badge */}
-					<div
-						data-hero-badge
-						className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 mb-5"
-					>
-						<div className="w-2 h-2 rounded-full bg-primary animate-pulse-glow" />
-						<span className="text-[10px] sm:text-xs font-semibold text-primary uppercase tracking-wider">
-							Open Source Auto-Rigging
-						</span>
-					</div>
-
+			<div className="w-full max-w-350 mx-auto px-4 sm:px-6 md:px-12 py-20">
+				<div className="max-w-md sm:max-w-lg md:max-w-xl">
 					{/* Heading */}
 					<h1
 						data-hero-heading

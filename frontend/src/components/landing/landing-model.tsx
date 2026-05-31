@@ -122,18 +122,18 @@ export default function LandingModel({
 				triggers.push(
 					ScrollTrigger.create({
 						trigger: el,
-						start: "top center",
-						end: "bottom center",
+						start: "top 80%",
+						end: "center center",
 						scrub: 0.8,
 						onUpdate: (self) => {
 							const values = lerpValues(
 								sectionConfig.start,
 								sectionConfig.end,
-								self.progress
+								self.progress,
 							);
 							Object.assign(target.current, values);
 						},
-					})
+					}),
 				);
 			}
 
@@ -143,8 +143,8 @@ export default function LandingModel({
 				triggers.push(
 					ScrollTrigger.create({
 						trigger: classifyEl,
-						start: "top 60%",
-						end: "bottom 40%",
+						start: "top 20%",
+						end: "bottom 50%",
 						onEnter: () => {
 							classifyActive.current = true;
 							dissolveTime.current = 0;
@@ -161,7 +161,7 @@ export default function LandingModel({
 							classifyActive.current = false;
 							resetDissolve();
 						},
-					})
+					}),
 				);
 			}
 
@@ -173,11 +173,19 @@ export default function LandingModel({
 						trigger: downloadEl,
 						start: "top 60%",
 						end: "bottom 40%",
-						onEnter: () => { downloadActive.current = true; },
-						onLeave: () => { downloadActive.current = false; },
-						onEnterBack: () => { downloadActive.current = true; },
-						onLeaveBack: () => { downloadActive.current = false; },
-					})
+						onEnter: () => {
+							downloadActive.current = true;
+						},
+						onLeave: () => {
+							downloadActive.current = false;
+						},
+						onEnterBack: () => {
+							downloadActive.current = true;
+						},
+						onLeaveBack: () => {
+							downloadActive.current = false;
+						},
+					}),
 				);
 			}
 
@@ -216,7 +224,7 @@ export default function LandingModel({
 			group.rotation.y += (t.rotY - group.rotation.y) * 0.06;
 			const targetScale = t.scale * floatScale;
 			group.scale.setScalar(
-				group.scale.x + (targetScale - group.scale.x) * 0.08
+				group.scale.x + (targetScale - group.scale.x) * 0.08,
 			);
 		}
 

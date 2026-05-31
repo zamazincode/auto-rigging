@@ -39,7 +39,7 @@ export default function PipelineSection({
 				},
 			});
 		},
-		{ scope: sectionRef }
+		{ scope: sectionRef },
 	);
 
 	return (
