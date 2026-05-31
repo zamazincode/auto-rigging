@@ -21,7 +21,7 @@ export default function LandingCanvas({ children }: LandingCanvasProps) {
 				}}
 				gl={{
 					antialias: true,
-					alpha: false,
+					alpha: true,
 					powerPreference: "high-performance",
 				}}
 				style={{ width: "100%", height: "100%" }}
@@ -42,13 +42,9 @@ export default function LandingCanvas({ children }: LandingCanvasProps) {
 						intensity={isDark ? 0.15 : 0.2}
 					/>
 
-					{/* Background */}
-					<color
-						attach="background"
-						args={[isDark ? "#111118" : "#f0f0f0"]}
-					/>
-
+					{/* Fog perfectly matches CSS background */}
 					<fog
+						key={theme}
 						attach="fog"
 						args={[isDark ? "#111118" : "#f0f0f0", 15, 40]}
 					/>
