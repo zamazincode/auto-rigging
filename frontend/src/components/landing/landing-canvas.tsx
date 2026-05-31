@@ -14,7 +14,7 @@ export default function LandingCanvas({ children }: LandingCanvasProps) {
 		<div className="fixed inset-0 z-[1]">
 			<Canvas
 				camera={{
-					position: [3, 1.5, 3],
+					position: [0, 0, 4],
 					fov: 45,
 					near: 0.1,
 					far: 100,

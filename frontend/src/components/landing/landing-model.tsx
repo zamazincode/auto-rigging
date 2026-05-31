@@ -1,6 +1,6 @@
 import { useRef, useEffect, useCallback } from "react";
 import { useGLTF } from "@react-three/drei";
-import { useFrame, useThree } from "@react-three/fiber";
+import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -25,7 +25,6 @@ export default function LandingModel({
 }: LandingModelProps) {
 	const groupRef = useRef<THREE.Group>(null);
 	const triggersRef = useRef<ScrollTrigger[]>([]);
-	const { camera } = useThree();
 	const timeRef = useRef(0);
 
 	const humanGltf = useGLTF("/human.glb");
@@ -44,7 +43,10 @@ export default function LandingModel({
 	const classifyActive = useRef(false);
 	const dissolveTime = useRef(0);
 	const downloadActive = useRef(false);
-	const skeletonHelperRef = useRef<THREE.SkeletonHelper | null>(null);
+	const skeletonGroupRef = useRef<THREE.Group | null>(null);
+	
+	// Used to instantly snap model to correct position on initial load/refresh
+	const snapToTarget = useRef(true);
 
 	// Setup models + dissolve materials
 	useEffect(() => {
@@ -146,6 +148,8 @@ export default function LandingModel({
 						start: "top 20%",
 						end: "bottom 50%",
 						onEnter: () => {
+							if (humanDissolveRef.current) gsap.killTweensOf(humanDissolveRef.current.uniforms.uProgress);
+							if (quadDissolveRef.current) gsap.killTweensOf(quadDissolveRef.current.uniforms.uProgress);
 							classifyActive.current = true;
 							dissolveTime.current = 0;
 						},
@@ -154,6 +158,8 @@ export default function LandingModel({
 							resetDissolve();
 						},
 						onEnterBack: () => {
+							if (humanDissolveRef.current) gsap.killTweensOf(humanDissolveRef.current.uniforms.uProgress);
+							if (quadDissolveRef.current) gsap.killTweensOf(quadDissolveRef.current.uniforms.uProgress);
 							classifyActive.current = true;
 							dissolveTime.current = 0;
 						},
@@ -190,6 +196,11 @@ export default function LandingModel({
 			}
 
 			triggersRef.current = triggers;
+
+			// Turn off snapping 500ms after triggers are set up
+			setTimeout(() => {
+				snapToTarget.current = false;
+			}, 500);
 		}, 200);
 
 		return () => {
@@ -200,10 +211,20 @@ export default function LandingModel({
 	}, [contentReady]);
 
 	function resetDissolve() {
-		if (humanDissolveRef.current)
-			humanDissolveRef.current.uniforms.uProgress.value = 0;
-		if (quadDissolveRef.current)
-			quadDissolveRef.current.uniforms.uProgress.value = 1;
+		if (humanDissolveRef.current) {
+			gsap.to(humanDissolveRef.current.uniforms.uProgress, {
+				value: 0,
+				duration: 1.2,
+				ease: "power2.inOut",
+			});
+		}
+		if (quadDissolveRef.current) {
+			gsap.to(quadDissolveRef.current.uniforms.uProgress, {
+				value: 1,
+				duration: 1.2,
+				ease: "power2.inOut",
+			});
+		}
 	}
 
 	// Render loop
@@ -212,27 +233,31 @@ export default function LandingModel({
 		const t = target.current;
 		const group = groupRef.current;
 
+		const lerpPos = snapToTarget.current ? 1 : 0.08;
+
 		if (group) {
 			const floatY =
 				Math.sin(timeRef.current * 0.8) * 0.04 * t.floatIntensity;
 			const floatScale =
 				1 + Math.sin(timeRef.current * 1.2) * 0.008 * t.floatIntensity;
 
-			group.position.x += (t.posX - group.position.x) * 0.08;
-			group.position.y += (t.posY + floatY - group.position.y) * 0.08;
-			group.position.z += (t.posZ - group.position.z) * 0.08;
-			group.rotation.y += (t.rotY - group.rotation.y) * 0.06;
+			group.position.x += (t.posX - group.position.x) * lerpPos;
+			group.position.y += (t.posY + floatY - group.position.y) * lerpPos;
+			group.position.z += (t.posZ - group.position.z) * lerpPos;
+			
+			if (snapToTarget.current) {
+				group.rotation.y = t.rotY;
+			} else {
+				group.rotation.y += (t.rotY - group.rotation.y) * 0.06;
+			}
+			
 			const targetScale = t.scale * floatScale;
 			group.scale.setScalar(
-				group.scale.x + (targetScale - group.scale.x) * 0.08,
+				group.scale.x + (targetScale - group.scale.x) * lerpPos,
 			);
 		}
 
-		// Camera
-		camera.position.x += (t.camX - camera.position.x) * 0.04;
-		camera.position.y += (t.camY - camera.position.y) * 0.04;
-		camera.position.z += (t.camZ - camera.position.z) * 0.04;
-		camera.lookAt(0, 1, 0);
+		// Camera is now fixed, no updates here.
 
 		// === Dissolve cycling (smooth, 7 second cycle) ===
 		if (classifyActive.current) {
@@ -273,37 +298,85 @@ export default function LandingModel({
 				quadDissolveRef.current.uniforms.uProgress.value = quadP;
 		}
 
-		// === Skeleton helper in download section ===
+		// === Custom Thick Skeleton in download section ===
 		if (downloadActive.current) {
-			if (!skeletonHelperRef.current) {
-				const helper = new THREE.SkeletonHelper(humanGltf.scene);
-				const mat = helper.material as THREE.LineBasicMaterial;
-				mat.color = new THREE.Color("#ff8800");
-				mat.linewidth = 2;
-				mat.depthTest = false;
-				mat.transparent = true;
-				state.scene.add(helper);
-				skeletonHelperRef.current = helper;
+			if (!skeletonGroupRef.current) {
+				const boneGroup = new THREE.Group();
+				
+				const boneMat = new THREE.MeshStandardMaterial({
+					color: 0x00ffff,
+					emissive: 0x0088cc,
+					emissiveIntensity: 1.0,
+					roughness: 0.2,
+					metalness: 0.8,
+					depthTest: false,
+					transparent: true,
+					opacity: 0.95
+				});
+
+				const sphereGeom = new THREE.SphereGeometry(0.012, 8, 8);
+				const cylinderGeom = new THREE.CylinderGeometry(0.015, 0.005, 1, 8);
+				cylinderGeom.translate(0, 0.5, 0); // Base at origin
+				cylinderGeom.rotateX(Math.PI / 2); // Point along +Z
 
 				humanGltf.scene.traverse((child) => {
-					if (child instanceof THREE.Mesh) {
-						const m = child.material as THREE.ShaderMaterial;
-						if (m.wireframe !== undefined) m.wireframe = true;
+					if (child.type === "Bone") {
+						const bone = child as THREE.Bone;
+						
+						// Create joint sphere
+						const joint = new THREE.Mesh(sphereGeom, boneMat);
+						joint.renderOrder = 999;
+						joint.userData.isCustomBone = true;
+						bone.add(joint);
+
+						// Create bone segments
+						bone.children.forEach((c) => {
+							if (c.type === "Bone") {
+								const length = c.position.length();
+								if (length > 0.001) {
+									const seg = new THREE.Mesh(cylinderGeom, boneMat);
+									seg.scale.set(1, 1, length);
+									
+									const dir = c.position.clone().normalize();
+									const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir);
+									seg.quaternion.copy(q);
+									
+									seg.renderOrder = 999;
+									seg.userData.isCustomBone = true;
+									bone.add(seg);
+								}
+							}
+						});
 					}
 				});
-			}
-		} else {
-			if (skeletonHelperRef.current) {
-				state.scene.remove(skeletonHelperRef.current);
-				skeletonHelperRef.current.dispose();
-				skeletonHelperRef.current = null;
+				
+				boneGroup.userData = { boneMat, sphereGeom, cylinderGeom };
+				state.scene.add(boneGroup);
+				skeletonGroupRef.current = boneGroup;
 
 				humanGltf.scene.traverse((child) => {
-					if (child instanceof THREE.Mesh) {
+					if (child instanceof THREE.Mesh && !child.userData.isCustomBone) {
 						const m = child.material as THREE.ShaderMaterial;
 						if (m.wireframe !== undefined) m.wireframe = false;
 					}
 				});
+			}
+		} else {
+			if (skeletonGroupRef.current) {
+				humanGltf.scene.traverse((child) => {
+					if (child.type === "Bone") {
+						const toRemove = child.children.filter((c) => c.userData.isCustomBone);
+						toRemove.forEach((c) => child.remove(c));
+					}
+				});
+
+				const { boneMat, sphereGeom, cylinderGeom } = skeletonGroupRef.current.userData;
+				boneMat.dispose();
+				sphereGeom.dispose();
+				cylinderGeom.dispose();
+
+				state.scene.remove(skeletonGroupRef.current);
+				skeletonGroupRef.current = null;
 			}
 		}
 	});

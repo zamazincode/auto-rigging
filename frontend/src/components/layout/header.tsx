@@ -15,8 +15,8 @@ export default function Header() {
 		>
 			<div className="flex items-center justify-between h-14 px-6 max-w-[1600px] mx-auto">
 				{/* Logo */}
-				<Link
-					to="/"
+				<a
+					href="/"
 					className="flex items-center gap-2 font-semibold text-lg tracking-tight
 						hover:opacity-80 transition-opacity"
 				>
@@ -24,7 +24,7 @@ export default function Header() {
 					<span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
 						ZamaRig
 					</span>
-				</Link>
+				</a>
 
 				{/* Navigation */}
 				<nav className="flex items-center gap-1">
@@ -33,6 +33,22 @@ export default function Header() {
 							link.to === "/"
 								? location.pathname === "/"
 								: location.pathname.startsWith(link.to);
+
+						if (link.to === "/") {
+							return (
+								<a
+									key={link.to}
+									href={link.to}
+									className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200
+										${isActive
+											? "text-primary bg-primary/10"
+											: "text-copy-light hover:text-copy hover:bg-background/60"
+										}`}
+								>
+									{link.label}
+								</a>
+							);
+						}
 
 						return (
 							<Link

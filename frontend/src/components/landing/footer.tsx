@@ -16,14 +16,14 @@ export default function Footer() {
 				<div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-6 md:gap-12">
 					{/* Brand column */}
 					<div className="col-span-2 md:col-span-1">
-						<Link
-							to="/"
+						<a
+							href="/"
 							className="inline-flex items-center gap-2 font-semibold text-lg mb-3"
 						>
 							<span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-								AutoRig
+								ZamaRig
 							</span>
-						</Link>
+						</a>
 						<p className="text-xs sm:text-sm text-copy-lighter leading-relaxed max-w-xs">
 							Open-source auto-rigging pipeline powered by AI
 							classification and automated bone fitting.
@@ -37,12 +37,12 @@ export default function Footer() {
 						</h3>
 						<ul className="space-y-2">
 							<li>
-								<Link
-									to="/"
+								<a
+									href="/"
 									className="text-xs sm:text-sm text-copy-lighter hover:text-copy transition-colors"
 								>
 									Home
-								</Link>
+								</a>
 							</li>
 							<li>
 								<Link
