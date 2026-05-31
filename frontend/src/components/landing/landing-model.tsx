@@ -111,6 +111,30 @@ export default function LandingModel({
 
 			const config = getConfig();
 			const triggers: ScrollTrigger[] = [];
+			const animTriggers: ScrollTrigger[] = [];
+
+			const updateTarget = () => {
+				if (animTriggers.length === 0) return;
+				let activeIndex = -1;
+				for (let i = 0; i < animTriggers.length; i++) {
+					if (animTriggers[i].progress > 0) {
+						activeIndex = i;
+					}
+				}
+
+				if (activeIndex === -1) {
+					Object.assign(target.current, config.hero.start);
+				} else {
+					const t = animTriggers[activeIndex];
+					// activeIndex 0 is upload (SECTION_IDS[1])
+					const id = SECTION_IDS[activeIndex + 1];
+					const sectionConfig = config[id];
+					Object.assign(
+						target.current,
+						lerpValues(sectionConfig.start, sectionConfig.end, t.progress)
+					);
+				}
+			};
 
 			for (const id of SECTION_IDS) {
 				if (id === "hero") continue;
@@ -118,26 +142,21 @@ export default function LandingModel({
 				const el = document.querySelector(`#${id}`);
 				if (!el) continue;
 
-				const sectionConfig = config[id];
-
-				// Position/camera animation: triggers as section comes into center
-				triggers.push(
-					ScrollTrigger.create({
-						trigger: el,
-						start: "top 80%",
-						end: "center center",
-						scrub: 0.8,
-						onUpdate: (self) => {
-							const values = lerpValues(
-								sectionConfig.start,
-								sectionConfig.end,
-								self.progress,
-							);
-							Object.assign(target.current, values);
-						},
-					}),
-				);
+				// Position animation: triggers as section comes into center
+				const st = ScrollTrigger.create({
+					trigger: el,
+					start: "top 80%",
+					end: "center center",
+					scrub: 0.8,
+					onUpdate: updateTarget,
+				});
+				
+				animTriggers.push(st);
+				triggers.push(st);
 			}
+
+			// Force initial evaluation
+			updateTarget();
 
 			// Dissolve activation — only when classify is centered
 			const classifyEl = document.querySelector("#classify");
