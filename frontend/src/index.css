@@ -85,7 +85,6 @@
 	}
 
 	html {
-		scroll-behavior: smooth;
 		-webkit-font-smoothing: antialiased;
 		-moz-osx-font-smoothing: grayscale;
 	}
@@ -134,6 +133,27 @@
 		backdrop-filter: blur(20px);
 		-webkit-backdrop-filter: blur(20px);
 		border: 1px solid var(--color-border);
+	}
+
+	/* Glass card for landing page section text */
+	.glass-card {
+		background: color-mix(in srgb, var(--color-foreground) 75%, transparent);
+		backdrop-filter: blur(16px);
+		-webkit-backdrop-filter: blur(16px);
+		border: 1px solid color-mix(in srgb, var(--color-border) 40%, transparent);
+		border-radius: 1rem;
+		padding: 2rem;
+	}
+
+	/* Scroll progress indicator */
+	.scroll-progress {
+		position: fixed;
+		top: 0;
+		left: 0;
+		height: 3px;
+		background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+		z-index: 100;
+		transform-origin: left;
 	}
 }
 
