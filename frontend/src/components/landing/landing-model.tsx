@@ -44,7 +44,7 @@ export default function LandingModel({
 	const dissolveTime = useRef(0);
 	const downloadActive = useRef(false);
 	const skeletonGroupRef = useRef<THREE.Group | null>(null);
-	
+
 	// Used to instantly snap model to correct position on initial load/refresh
 	const snapToTarget = useRef(true);
 
@@ -54,13 +54,13 @@ export default function LandingModel({
 		const quadScene = quadrupedGltf.scene;
 
 		const humanMat = createDissolveMaterial({
-			baseColor: "#c77d6a",
-			edgeColor: "#00ffcc",
+			baseColor: "#c8e0dc",
+			edgeColor: "#354b47",
 			edgeWidth: 0.06,
 		});
 		const quadMat = createDissolveMaterial({
-			baseColor: "#c77d6a",
-			edgeColor: "#ff6600",
+			baseColor: "#c8e0dc",
+			edgeColor: "#544a69",
 			edgeWidth: 0.06,
 		});
 
@@ -131,7 +131,11 @@ export default function LandingModel({
 					const sectionConfig = config[id];
 					Object.assign(
 						target.current,
-						lerpValues(sectionConfig.start, sectionConfig.end, t.progress)
+						lerpValues(
+							sectionConfig.start,
+							sectionConfig.end,
+							t.progress,
+						),
 					);
 				}
 			};
@@ -150,7 +154,7 @@ export default function LandingModel({
 					scrub: 0.8,
 					onUpdate: updateTarget,
 				});
-				
+
 				animTriggers.push(st);
 				triggers.push(st);
 			}
@@ -167,8 +171,14 @@ export default function LandingModel({
 						start: "top 20%",
 						end: "bottom 50%",
 						onEnter: () => {
-							if (humanDissolveRef.current) gsap.killTweensOf(humanDissolveRef.current.uniforms.uProgress);
-							if (quadDissolveRef.current) gsap.killTweensOf(quadDissolveRef.current.uniforms.uProgress);
+							if (humanDissolveRef.current)
+								gsap.killTweensOf(
+									humanDissolveRef.current.uniforms.uProgress,
+								);
+							if (quadDissolveRef.current)
+								gsap.killTweensOf(
+									quadDissolveRef.current.uniforms.uProgress,
+								);
 							classifyActive.current = true;
 							dissolveTime.current = 0;
 						},
@@ -177,8 +187,14 @@ export default function LandingModel({
 							resetDissolve();
 						},
 						onEnterBack: () => {
-							if (humanDissolveRef.current) gsap.killTweensOf(humanDissolveRef.current.uniforms.uProgress);
-							if (quadDissolveRef.current) gsap.killTweensOf(quadDissolveRef.current.uniforms.uProgress);
+							if (humanDissolveRef.current)
+								gsap.killTweensOf(
+									humanDissolveRef.current.uniforms.uProgress,
+								);
+							if (quadDissolveRef.current)
+								gsap.killTweensOf(
+									quadDissolveRef.current.uniforms.uProgress,
+								);
 							classifyActive.current = true;
 							dissolveTime.current = 0;
 						},
@@ -263,13 +279,13 @@ export default function LandingModel({
 			group.position.x += (t.posX - group.position.x) * lerpPos;
 			group.position.y += (t.posY + floatY - group.position.y) * lerpPos;
 			group.position.z += (t.posZ - group.position.z) * lerpPos;
-			
+
 			if (snapToTarget.current) {
 				group.rotation.y = t.rotY;
 			} else {
 				group.rotation.y += (t.rotY - group.rotation.y) * 0.06;
 			}
-			
+
 			const targetScale = t.scale * floatScale;
 			group.scale.setScalar(
 				group.scale.x + (targetScale - group.scale.x) * lerpPos,
@@ -321,7 +337,7 @@ export default function LandingModel({
 		if (downloadActive.current) {
 			if (!skeletonGroupRef.current) {
 				const boneGroup = new THREE.Group();
-				
+
 				const boneMat = new THREE.MeshStandardMaterial({
 					color: 0x00ffff,
 					emissive: 0x0088cc,
@@ -330,18 +346,23 @@ export default function LandingModel({
 					metalness: 0.8,
 					depthTest: false,
 					transparent: true,
-					opacity: 0.95
+					opacity: 0.95,
 				});
 
 				const sphereGeom = new THREE.SphereGeometry(0.012, 8, 8);
-				const cylinderGeom = new THREE.CylinderGeometry(0.015, 0.005, 1, 8);
+				const cylinderGeom = new THREE.CylinderGeometry(
+					0.015,
+					0.005,
+					1,
+					8,
+				);
 				cylinderGeom.translate(0, 0.5, 0); // Base at origin
 				cylinderGeom.rotateX(Math.PI / 2); // Point along +Z
 
 				humanGltf.scene.traverse((child) => {
 					if (child.type === "Bone") {
 						const bone = child as THREE.Bone;
-						
+
 						// Create joint sphere
 						const joint = new THREE.Mesh(sphereGeom, boneMat);
 						joint.renderOrder = 999;
@@ -353,13 +374,20 @@ export default function LandingModel({
 							if (c.type === "Bone") {
 								const length = c.position.length();
 								if (length > 0.001) {
-									const seg = new THREE.Mesh(cylinderGeom, boneMat);
+									const seg = new THREE.Mesh(
+										cylinderGeom,
+										boneMat,
+									);
 									seg.scale.set(1, 1, length);
-									
+
 									const dir = c.position.clone().normalize();
-									const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir);
+									const q =
+										new THREE.Quaternion().setFromUnitVectors(
+											new THREE.Vector3(0, 0, 1),
+											dir,
+										);
 									seg.quaternion.copy(q);
-									
+
 									seg.renderOrder = 999;
 									seg.userData.isCustomBone = true;
 									bone.add(seg);
@@ -368,13 +396,16 @@ export default function LandingModel({
 						});
 					}
 				});
-				
+
 				boneGroup.userData = { boneMat, sphereGeom, cylinderGeom };
 				state.scene.add(boneGroup);
 				skeletonGroupRef.current = boneGroup;
 
 				humanGltf.scene.traverse((child) => {
-					if (child instanceof THREE.Mesh && !child.userData.isCustomBone) {
+					if (
+						child instanceof THREE.Mesh &&
+						!child.userData.isCustomBone
+					) {
 						const m = child.material as THREE.ShaderMaterial;
 						if (m.wireframe !== undefined) m.wireframe = false;
 					}
@@ -384,12 +415,15 @@ export default function LandingModel({
 			if (skeletonGroupRef.current) {
 				humanGltf.scene.traverse((child) => {
 					if (child.type === "Bone") {
-						const toRemove = child.children.filter((c) => c.userData.isCustomBone);
+						const toRemove = child.children.filter(
+							(c) => c.userData.isCustomBone,
+						);
 						toRemove.forEach((c) => child.remove(c));
 					}
 				});
 
-				const { boneMat, sphereGeom, cylinderGeom } = skeletonGroupRef.current.userData;
+				const { boneMat, sphereGeom, cylinderGeom } =
+					skeletonGroupRef.current.userData;
 				boneMat.dispose();
 				sphereGeom.dispose();
 				cylinderGeom.dispose();
