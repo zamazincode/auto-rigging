@@ -1,5 +1,5 @@
 import { useTheme } from "../../hooks/use-theme";
-import { Grid, ContactShadows } from "@react-three/drei";
+import { Grid } from "@react-three/drei";
 
 export default function SceneEnvironment() {
 	const { theme } = useTheme();
@@ -68,10 +68,7 @@ export default function SceneEnvironment() {
 			/>
 
 			{/* Subtle fog for depth */}
-			<fog
-				attach="fog"
-				args={[isDark ? "#1e1e2e" : "#d4d4d4", 12, 35]}
-			/>
+			<fog attach="fog" args={[isDark ? "#1e1e2e" : "#d4d4d4", 12, 35]} />
 		</>
 	);
 }
