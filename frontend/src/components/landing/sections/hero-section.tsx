@@ -79,7 +79,7 @@ export default function HeroSection() {
 						<Link
 							to="/rig"
 							className="inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3 rounded-xl
-								bg-primary hover:bg-primary-light text-primary-content
+								bg-primary hover:bg-primary-light text-foreground
 								text-sm font-semibold shadow-lg shadow-primary/20
 								transition-all duration-200 active:scale-95"
 						>

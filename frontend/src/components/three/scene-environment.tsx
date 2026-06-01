@@ -41,25 +41,25 @@ export default function SceneEnvironment() {
 			<Grid
 				args={[20, 20]}
 				position={[0, -0.01, 0]}
-				cellSize={0.6}
-				cellThickness={0.4}
-				cellColor={isDark ? "#333344" : "#c8c8c8"}
+				cellSize={0.4}
+				cellThickness={0.8}
+				cellColor={isDark ? "#333344" : "#b0b0b0"}
 				sectionSize={3}
-				sectionThickness={0.8}
+				sectionThickness={1}
 				sectionColor={isDark ? "#444455" : "#b0b0b0"}
-				fadeDistance={18}
+				fadeDistance={24}
 				fadeStrength={1.5}
 				infiniteGrid
 			/>
 
 			{/* Contact shadows for grounded look */}
-			<ContactShadows
+			{/* <ContactShadows
 				position={[0, 0, 0]}
 				opacity={isDark ? 0.35 : 0.45}
 				scale={10}
 				blur={2.5}
 				far={4}
-			/>
+			/> */}
 
 			{/* Background color — light theme: soft warm gray, dark: deep navy */}
 			<color

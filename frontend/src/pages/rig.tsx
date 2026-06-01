@@ -93,10 +93,10 @@ export default function Rig() {
 	}, [state.resultUrl, state.file]);
 
 	return (
-		<main className="flex flex-1 overflow-hidden">
+		<main className="flex flex-1 overflow-hidden max-sm:flex-col-reverse max-sm:h-fit">
 			{/* Left Sidebar — Animations Panel (placeholder) */}
 			<aside
-				className="w-[280px] min-w-[280px] border-r border-border bg-foreground
+				className="w-[280px] min-w-[280px] max-sm:w-full border-r border-border bg-foreground
 					flex flex-col overflow-y-auto"
 			>
 				{/* Sidebar Header */}
@@ -110,21 +110,7 @@ export default function Rig() {
 				<div className="flex-1 flex items-center justify-center p-6">
 					<div className="text-center space-y-4">
 						<div className="mx-auto w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center animate-bounce-subtle">
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								width="28"
-								height="28"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								strokeWidth="1.5"
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								className="text-primary"
-							>
-								<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
-								<circle cx="12" cy="13" r="3" />
-							</svg>
+							<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-person-standing-icon lucide-person-standing"><circle cx="12" cy="5" r="1" /><path d="m9 20 3-6 3 6" /><path d="m6 8 6 2 6-2" /><path d="M12 10v4" /></svg>
 						</div>
 						<div className="space-y-2">
 							<p className="text-sm font-medium text-copy">Coming Soon</p>
@@ -161,7 +147,7 @@ export default function Rig() {
 					/* ===== Model Loaded State (Preview, Processing, Completed) ===== */
 					<div className="flex-1 relative flex items-center justify-center">
 						{/* Top bar with file info and actions */}
-						<div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-4 py-3">
+						<div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-4 py-3 max-sm:flex-col gap-2">
 							<div className="flex items-center gap-3">
 								<div className="glass rounded-lg px-3 py-1.5 flex items-center gap-2">
 									<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
@@ -175,19 +161,16 @@ export default function Rig() {
 								</div>
 							</div>
 
-							<div className="flex items-center gap-2">
+							<div className="flex gap-2 h-fit items-stretch">
 								{state.status === "previewing" && (
 									<button
 										onClick={startProcessing}
-										className="bg-primary hover:bg-primary-light text-primary-content 
+										className="bg-primary hover:bg-primary-light text-foreground 
 											px-4 py-1.5 rounded-lg text-sm font-semibold shadow-lg shadow-primary/20
-											transition-all duration-200 active:scale-95 flex items-center gap-2"
+											transition-all duration-200 active:scale-95 flex items-center gap-2 h-full"
 									>
 										<span>Auto-Rig</span>
-										<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-											<path d="M5 12h14" />
-											<path d="M12 5l7 7-7 7" />
-										</svg>
+										<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-bone-icon lucide-bone"><path d="M17 10c.7-.7 1.69 0 2.5 0a2.5 2.5 0 1 0 0-5 .5.5 0 0 1-.5-.5 2.5 2.5 0 1 0-5 0c0 .81.7 1.8 0 2.5l-7 7c-.7.7-1.69 0-2.5 0a2.5 2.5 0 0 0 0 5c.28 0 .5.22.5.5a2.5 2.5 0 1 0 5 0c0-.81-.7-1.8 0-2.5Z" /></svg>
 									</button>
 								)}
 
@@ -196,7 +179,7 @@ export default function Rig() {
 										onClick={handleDownload}
 										className="bg-primary hover:bg-primary-light text-primary-content 
 											px-4 py-1.5 rounded-lg text-sm font-semibold shadow-lg shadow-primary/20
-											transition-all duration-200 active:scale-95 flex items-center gap-2"
+											transition-all duration-200 active:scale-95 flex items-center gap-2 h-full"
 									>
 										<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
 											<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -290,10 +273,9 @@ export default function Rig() {
 								border-2 border-dashed cursor-pointer
 								flex flex-col items-center justify-center gap-5
 								transition-all duration-300 ease-out
-								${
-									isDragOver
-										? "border-primary bg-primary/5 scale-[1.02] shadow-lg shadow-primary/10"
-										: "border-border hover:border-primary-light hover:bg-foreground/50"
+								${isDragOver
+									? "border-primary bg-primary/5 scale-[1.02] shadow-lg shadow-primary/10"
+									: "border-border hover:border-primary-light hover:bg-foreground/50"
 								}
 							`}
 						>
@@ -315,9 +297,8 @@ export default function Rig() {
 									strokeWidth="1.5"
 									strokeLinecap="round"
 									strokeLinejoin="round"
-									className={`transition-colors duration-300 ${
-										isDragOver ? "text-primary" : "text-copy-lighter"
-									}`}
+									className={`transition-colors duration-300 ${isDragOver ? "text-primary" : "text-copy-lighter"
+										}`}
 								>
 									<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
 									<polyline points="17 8 12 3 7 8" />

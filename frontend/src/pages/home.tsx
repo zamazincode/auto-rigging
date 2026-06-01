@@ -107,7 +107,7 @@ export default function Home() {
 								<Link
 									to="/rig"
 									className="inline-flex items-center gap-2 px-6 py-3 rounded-xl
-										bg-primary hover:bg-primary-light text-primary-content
+										bg-primary hover:bg-primary-light text-foreground
 										text-sm font-semibold shadow-lg shadow-primary/20
 										transition-all duration-200 active:scale-95"
 								>

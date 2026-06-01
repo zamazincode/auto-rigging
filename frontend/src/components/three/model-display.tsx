@@ -22,44 +22,44 @@ function createDefaultMaterial() {
 
 // Auto-center and scale the model to fit viewport
 function normalizeModel(object: THREE.Object3D) {
+	// Reset any existing transforms on the object
+	object.updateMatrixWorld(true);
+
+	// Step 1: Compute initial bounding box
 	const box = new THREE.Box3().setFromObject(object);
-	const center = box.getCenter(new THREE.Vector3());
 	const size = box.getSize(new THREE.Vector3());
+	const center = box.getCenter(new THREE.Vector3());
 
-	// Center the model horizontally, place feet at y=0
-	object.position.x -= center.x;
-	object.position.z -= center.z;
-	object.position.y -= box.min.y;
-
-	// Scale to fit ~2 units tall
+	// Step 2: Scale to fit ~2 units tall
 	const maxDim = Math.max(size.x, size.y, size.z);
 	if (maxDim > 0) {
 		const scale = 2 / maxDim;
 		object.scale.multiplyScalar(scale);
 	}
+
+	// Step 3: Recompute bounding box AFTER scaling
+	object.updateMatrixWorld(true);
+	const scaledBox = new THREE.Box3().setFromObject(object);
+	const scaledCenter = scaledBox.getCenter(new THREE.Vector3());
+
+	// Step 4: Center horizontally (X, Z) and place feet at Y=0
+	object.position.x -= scaledCenter.x;
+	object.position.z -= scaledCenter.z;
+	object.position.y -= scaledBox.min.y;
 }
 
-// Apply default material if the model has no textures
-function applyDefaultMaterialIfNeeded(object: THREE.Object3D) {
+// Force-apply a visible material to ALL meshes.
+// Many models use materials that are invisible in our scene (wrong color,
+// transparent, unlit, or normals are flipped). This ensures every model
+// is clearly visible with a consistent clay-like look.
+function forceApplyMaterial(object: THREE.Object3D) {
 	const defaultMat = createDefaultMaterial();
+	// Double-sided rendering handles models with flipped normals
+	defaultMat.side = THREE.DoubleSide;
 
 	object.traverse((child) => {
 		if (child instanceof THREE.Mesh) {
-			if (Array.isArray(child.material)) {
-				// If none of the materials in the array have a texture map, replace them all with default
-				const hasAnyTexture = child.material.some(
-					(mat) => (mat as THREE.MeshStandardMaterial).map
-				);
-				if (!hasAnyTexture) {
-					child.material = defaultMat;
-				}
-			} else {
-				const mat = child.material as THREE.MeshStandardMaterial;
-				if (!mat || !mat.map) {
-					child.material = defaultMat;
-				}
-			}
-
+			child.material = defaultMat;
 			child.castShadow = true;
 			child.receiveShadow = true;
 		}
@@ -98,7 +98,7 @@ export default function ModelDisplay({
 		}
 
 		const onModelLoaded = (object: THREE.Object3D) => {
-			applyDefaultMaterialIfNeeded(object);
+			forceApplyMaterial(object);
 			normalizeModel(object);
 			group.add(object);
 		};

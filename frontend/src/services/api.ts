@@ -1,4 +1,5 @@
-export const API_BASE = import.meta.env.VITE_API_URL;
+export const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
+
 
 export async function processModel(file: File): Promise<Blob> {
 	const formData = new FormData();
@@ -13,7 +14,7 @@ export async function processModel(file: File): Promise<Blob> {
 		const errorData = await response.json().catch(() => null);
 		throw new Error(
 			errorData?.detail ||
-				`Processing failed with status ${response.status}`,
+			`Processing failed with status ${response.status}`,
 		);
 	}
 
