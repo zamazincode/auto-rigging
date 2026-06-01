@@ -1,6 +1,8 @@
 import { useState, useRef, useCallback } from "react";
 import { SUPPORTED_FORMATS, type ViewMode } from "../types";
-import ModelViewer, { type ModelViewerHandle } from "../components/three/model-viewer";
+import ModelViewer, {
+	type ModelViewerHandle,
+} from "../components/three/model-viewer";
 import ModelDisplay from "../components/three/model-display";
 import ViewerControls from "../components/three/viewer-controls";
 import ProcessingOverlay from "../components/ui/processing-overlay";
@@ -24,7 +26,7 @@ export default function Rig() {
 		(f: File) => {
 			if (!isValidFile(f)) {
 				alert(
-					`Unsupported format. Please use: ${SUPPORTED_FORMATS.join(", ")}`
+					`Unsupported format. Please use: ${SUPPORTED_FORMATS.join(", ")}`,
 				);
 				return;
 			}
@@ -32,7 +34,7 @@ export default function Rig() {
 			const url = URL.createObjectURL(f);
 			setFile(f, url);
 		},
-		[isValidFile, setFile]
+		[isValidFile, setFile],
 	);
 
 	const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -56,7 +58,7 @@ export default function Rig() {
 			const droppedFile = e.dataTransfer.files[0];
 			if (droppedFile) handleFile(droppedFile);
 		},
-		[handleFile]
+		[handleFile],
 	);
 
 	const handleInputChange = useCallback(
@@ -64,7 +66,7 @@ export default function Rig() {
 			const selected = e.target.files?.[0];
 			if (selected) handleFile(selected);
 		},
-		[handleFile]
+		[handleFile],
 	);
 
 	const handleUploadClick = useCallback(() => {
@@ -83,8 +85,10 @@ export default function Rig() {
 			const a = document.createElement("a");
 			a.href = state.resultUrl;
 			const nameWithoutExt =
-				state.file.name.substring(0, state.file.name.lastIndexOf(".")) ||
-				state.file.name;
+				state.file.name.substring(
+					0,
+					state.file.name.lastIndexOf("."),
+				) || state.file.name;
 			a.download = `${nameWithoutExt}_rigged.fbx`;
 			document.body.appendChild(a);
 			a.click();
@@ -110,13 +114,31 @@ export default function Rig() {
 				<div className="flex-1 flex items-center justify-center p-6">
 					<div className="text-center space-y-4">
 						<div className="mx-auto w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center animate-bounce-subtle">
-							<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-person-standing-icon lucide-person-standing"><circle cx="12" cy="5" r="1" /><path d="m9 20 3-6 3 6" /><path d="m6 8 6 2 6-2" /><path d="M12 10v4" /></svg>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								width="24"
+								height="24"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								className="lucide lucide-person-standing-icon lucide-person-standing"
+							>
+								<circle cx="12" cy="5" r="1" />
+								<path d="m9 20 3-6 3 6" />
+								<path d="m6 8 6 2 6-2" />
+								<path d="M12 10v4" />
+							</svg>
 						</div>
 						<div className="space-y-2">
-							<p className="text-sm font-medium text-copy">Coming Soon</p>
+							<p className="text-sm font-medium text-copy">
+								Coming Soon
+							</p>
 							<p className="text-xs text-copy-lighter leading-relaxed">
-								Apply pre-built animations to your rigged model. This feature is
-								under development.
+								Apply pre-built animations to your rigged model.
+								This feature is under development.
 							</p>
 						</div>
 						<div
@@ -125,7 +147,8 @@ export default function Rig() {
 								background:
 									"linear-gradient(90deg, transparent, var(--color-primary-light), transparent)",
 								backgroundSize: "200% 100%",
-								animation: "skeleton-shimmer 1.8s ease-in-out infinite",
+								animation:
+									"skeleton-shimmer 1.8s ease-in-out infinite",
 							}}
 						/>
 					</div>
@@ -150,13 +173,32 @@ export default function Rig() {
 						<div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-4 py-3 max-sm:flex-col gap-2">
 							<div className="flex items-center gap-3">
 								<div className="glass rounded-lg px-3 py-1.5 flex items-center gap-2">
-									<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										width="14"
+										height="14"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										strokeWidth="2"
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										className="text-primary"
+									>
 										<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
 										<polyline points="14 2 14 8 20 8" />
 									</svg>
-									<span className="text-xs font-medium text-copy">{state.file.name}</span>
+									<span className="text-xs font-medium text-copy">
+										{state.file.name}
+									</span>
 									<span className="text-xs text-copy-lighter">
-										({(state.file.size / 1024 / 1024).toFixed(2)} MB)
+										(
+										{(
+											state.file.size /
+											1024 /
+											1024
+										).toFixed(2)}{" "}
+										MB)
 									</span>
 								</div>
 							</div>
@@ -164,15 +206,36 @@ export default function Rig() {
 							<div className="flex gap-2 h-fit items-stretch">
 								{state.status === "previewing" && (
 									<button
+										disabled
 										onClick={startProcessing}
 										className="bg-primary hover:bg-primary-light text-foreground 
 											px-4 py-1.5 rounded-lg text-sm font-semibold shadow-lg shadow-primary/20
-											transition-all duration-200 active:scale-95 flex items-center gap-2 h-full"
+											transition-all duration-200 active:scale-95 flex items-center gap-2 h-full "
 									>
 										<span>Auto-Rig</span>
-										<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-bone-icon lucide-bone"><path d="M17 10c.7-.7 1.69 0 2.5 0a2.5 2.5 0 1 0 0-5 .5.5 0 0 1-.5-.5 2.5 2.5 0 1 0-5 0c0 .81.7 1.8 0 2.5l-7 7c-.7.7-1.69 0-2.5 0a2.5 2.5 0 0 0 0 5c.28 0 .5.22.5.5a2.5 2.5 0 1 0 5 0c0-.81-.7-1.8 0-2.5Z" /></svg>
+										<svg
+											xmlns="http://www.w3.org/2000/svg"
+											width="16"
+											height="16"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="2"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											className="lucide lucide-bone-icon lucide-bone"
+										>
+											<path d="M17 10c.7-.7 1.69 0 2.5 0a2.5 2.5 0 1 0 0-5 .5.5 0 0 1-.5-.5 2.5 2.5 0 1 0-5 0c0 .81.7 1.8 0 2.5l-7 7c-.7.7-1.69 0-2.5 0a2.5 2.5 0 0 0 0 5c.28 0 .5.22.5.5a2.5 2.5 0 1 0 5 0c0-.81-.7-1.8 0-2.5Z" />
+										</svg>
 									</button>
 								)}
+
+								<div className="fixed bottom-4 right-4 bg-error flex items-center justify-center p-4 rounded-full text-foreground text-xs animate-bounce-subtle duration-1000">
+									<p className="max-w-64 text-center">
+										The server is currently inactive. So,
+										Auto-Rig button is not active now.
+									</p>
+								</div>
 
 								{state.status === "completed" && (
 									<button
@@ -181,10 +244,25 @@ export default function Rig() {
 											px-4 py-1.5 rounded-lg text-sm font-semibold shadow-lg shadow-primary/20
 											transition-all duration-200 active:scale-95 flex items-center gap-2 h-full"
 									>
-										<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+										<svg
+											xmlns="http://www.w3.org/2000/svg"
+											width="16"
+											height="16"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											strokeWidth="2"
+											strokeLinecap="round"
+											strokeLinejoin="round"
+										>
 											<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
 											<polyline points="7 10 12 15 17 10" />
-											<line x1="12" y1="15" x2="12" y2="3" />
+											<line
+												x1="12"
+												y1="15"
+												x2="12"
+												y2="3"
+											/>
 										</svg>
 										<span>Download FBX</span>
 									</button>
@@ -206,8 +284,16 @@ export default function Rig() {
 						<div className="absolute inset-0">
 							<ModelViewer ref={viewerRef} viewMode={viewMode}>
 								<ModelDisplay
-									url={state.status === "completed" ? state.resultUrl! : state.previewUrl!}
-									fileName={state.status === "completed" ? "rigged.fbx" : state.file.name}
+									url={
+										state.status === "completed"
+											? state.resultUrl!
+											: state.previewUrl!
+									}
+									fileName={
+										state.status === "completed"
+											? "rigged.fbx"
+											: state.file.name
+									}
 									showSkeleton={showSkeleton}
 								/>
 							</ModelViewer>
@@ -219,7 +305,9 @@ export default function Rig() {
 							showSkeleton={showSkeleton}
 							onViewModeChange={setViewMode}
 							onToggleSkeleton={() => setShowSkeleton((s) => !s)}
-							onResetCamera={() => viewerRef.current?.resetCamera()}
+							onResetCamera={() =>
+								viewerRef.current?.resetCamera()
+							}
 						/>
 
 						{/* Processing Overlay */}
@@ -232,15 +320,38 @@ export default function Rig() {
 							<div className="absolute inset-0 z-50 glass-strong flex items-center justify-center animate-fade-in">
 								<div className="w-full max-w-sm p-6 rounded-3xl bg-foreground shadow-2xl border border-error/20 flex flex-col items-center text-center">
 									<div className="w-12 h-12 rounded-full bg-error/10 flex items-center justify-center text-error mb-4">
-										<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+										<svg
+											xmlns="http://www.w3.org/2000/svg"
+											width="24"
+											height="24"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											strokeWidth="2"
+											strokeLinecap="round"
+											strokeLinejoin="round"
+										>
 											<circle cx="12" cy="12" r="10" />
-											<line x1="12" y1="8" x2="12" y2="12" />
-											<line x1="12" y1="16" x2="12.01" y2="16" />
+											<line
+												x1="12"
+												y1="8"
+												x2="12"
+												y2="12"
+											/>
+											<line
+												x1="12"
+												y1="16"
+												x2="12.01"
+												y2="16"
+											/>
 										</svg>
 									</div>
-									<p className="text-sm font-semibold text-copy mb-2">Rigging Failed</p>
+									<p className="text-sm font-semibold text-copy mb-2">
+										Rigging Failed
+									</p>
 									<p className="text-xs text-copy-light mb-6">
-										{state.errorMessage || "An unexpected error occurred during processing."}
+										{state.errorMessage ||
+											"An unexpected error occurred during processing."}
 									</p>
 									<div className="flex w-full gap-3">
 										<button
@@ -273,9 +384,10 @@ export default function Rig() {
 								border-2 border-dashed cursor-pointer
 								flex flex-col items-center justify-center gap-5
 								transition-all duration-300 ease-out
-								${isDragOver
-									? "border-primary bg-primary/5 scale-[1.02] shadow-lg shadow-primary/10"
-									: "border-border hover:border-primary-light hover:bg-foreground/50"
+								${
+									isDragOver
+										? "border-primary bg-primary/5 scale-[1.02] shadow-lg shadow-primary/10"
+										: "border-border hover:border-primary-light hover:bg-foreground/50"
 								}
 							`}
 						>
@@ -297,8 +409,11 @@ export default function Rig() {
 									strokeWidth="1.5"
 									strokeLinecap="round"
 									strokeLinejoin="round"
-									className={`transition-colors duration-300 ${isDragOver ? "text-primary" : "text-copy-lighter"
-										}`}
+									className={`transition-colors duration-300 ${
+										isDragOver
+											? "text-primary"
+											: "text-copy-lighter"
+									}`}
 								>
 									<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
 									<polyline points="17 8 12 3 7 8" />
