@@ -28,7 +28,7 @@ function normalizeModel(object: THREE.Object3D) {
 	// Step 1: Compute initial bounding box
 	const box = new THREE.Box3().setFromObject(object);
 	const size = box.getSize(new THREE.Vector3());
-	const center = box.getCenter(new THREE.Vector3());
+	// const center = box.getCenter(new THREE.Vector3());
 
 	// Step 2: Scale to fit ~2 units tall
 	const maxDim = Math.max(size.x, size.y, size.z);
@@ -120,7 +120,7 @@ export default function ModelDisplay({
 					url,
 					(gltf) => onModelLoaded(gltf.scene),
 					undefined,
-					onError
+					onError,
 				);
 				break;
 			}
@@ -160,14 +160,14 @@ export default function ModelDisplay({
 			// Create a skeleton helper for the entire group
 			// This automatically finds all THREE.Bone objects within the hierarchy
 			const helper = new THREE.SkeletonHelper(group);
-			
+
 			// Style the bones so they are highly visible
 			const mat = helper.material as THREE.LineBasicMaterial;
 			mat.linewidth = 3;
 			mat.color = new THREE.Color("#00ffcc"); // Bright cyan
 			mat.depthTest = false; // Render on top of meshes
 			mat.transparent = true;
-			
+
 			scene.add(helper);
 			skeletonHelperRef.current = helper;
 
