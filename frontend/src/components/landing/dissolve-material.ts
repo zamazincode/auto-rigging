@@ -77,14 +77,43 @@ float snoise(vec3 v) {
 `;
 
 const vertexShader = /* glsl */ `
+#include <skinning_pars_vertex>
+
 varying vec3 vWorldPosition;
+varying vec3 vLocalPosition;
 varying vec3 vNormal;
 varying vec2 vUv;
 
 void main() {
   vUv = uv;
-  vNormal = normalize(normalMatrix * normal);
-  vec4 worldPos = modelMatrix * vec4(position, 1.0);
+  vLocalPosition = position;
+
+  #include <skinbase_vertex>
+
+  // Transform position with skinning
+  #ifdef USE_SKINNING
+    vec4 skinVertex = bindMatrix * vec4(position, 1.0);
+    vec4 skinned = vec4(0.0);
+    skinned += boneMatX * skinVertex * skinWeight.x;
+    skinned += boneMatY * skinVertex * skinWeight.y;
+    skinned += boneMatZ * skinVertex * skinWeight.z;
+    skinned += boneMatW * skinVertex * skinWeight.w;
+    vec4 skinnedPos = bindMatrixInverse * skinned;
+
+    // Skin normal
+    mat4 skinMatrix2 = skinWeight.x * boneMatX
+      + skinWeight.y * boneMatY
+      + skinWeight.z * boneMatZ
+      + skinWeight.w * boneMatW;
+    vec3 skinnedNormal = (bindMatrixInverse * skinMatrix2 * bindMatrix * vec4(normal, 0.0)).xyz;
+    vNormal = normalize(normalMatrix * skinnedNormal);
+
+    vec4 worldPos = modelMatrix * skinnedPos;
+  #else
+    vNormal = normalize(normalMatrix * normal);
+    vec4 worldPos = modelMatrix * vec4(position, 1.0);
+  #endif
+
   vWorldPosition = worldPos.xyz;
   gl_Position = projectionMatrix * viewMatrix * worldPos;
 }
@@ -99,7 +128,13 @@ uniform vec3 uEdgeColor;
 uniform vec3 uBaseColor;
 uniform float uNoiseScale;
 
+// Weight paint uniforms
+uniform float uWeightProgress;
+uniform vec3 uBonePositions[6];
+uniform vec3 uBoneColors[6];
+
 varying vec3 vWorldPosition;
+varying vec3 vLocalPosition;
 varying vec3 vNormal;
 varying vec2 vUv;
 
@@ -120,7 +155,25 @@ void main() {
   vec3 lightDir = normalize(vec3(0.5, 0.8, 0.5));
   float diff = max(dot(vNormal, lightDir), 0.0);
   float ambient = 0.35;
-  vec3 color = uBaseColor * (ambient + diff * 0.65);
+  
+  // Weight Paint Calculation
+  vec3 wpColor = vec3(0.0);
+  float totalWeight = 0.0;
+  for(int i=0; i<6; i++) {
+    float dist = distance(vLocalPosition, uBonePositions[i]);
+    // Smooth inverse square falloff
+    float weight = 1.0 / (dist * dist * 100.0 + 0.1);
+    wpColor += uBoneColors[i] * weight;
+    totalWeight += weight;
+  }
+  wpColor /= totalWeight;
+  // Boost saturation/brightness of weight paint
+  wpColor = clamp(wpColor * 1.5, 0.0, 1.0);
+
+  // Mix base color with weight paint color based on progress
+  vec3 currentBaseColor = mix(uBaseColor, wpColor, uWeightProgress);
+  
+  vec3 color = currentBaseColor * (ambient + diff * 0.65);
 
   // Edge glow — bright colored edge at the dissolve boundary
   float edge = 1.0 - smoothstep(0.0, uEdgeWidth, noise - threshold);
@@ -139,6 +192,9 @@ export interface DissolveUniforms {
 	uEdgeColor: { value: THREE.Color };
 	uBaseColor: { value: THREE.Color };
 	uNoiseScale: { value: number };
+	uWeightProgress: { value: number };
+	uBonePositions: { value: THREE.Vector3[] };
+	uBoneColors: { value: THREE.Color[] };
 }
 
 export function createDissolveMaterial(
@@ -159,6 +215,13 @@ export function createDissolveMaterial(
 			value: new THREE.Color(options?.baseColor ?? "#c77d6a"),
 		},
 		uNoiseScale: { value: options?.noiseScale ?? 3.0 },
+		uWeightProgress: { value: 0 },
+		uBonePositions: { 
+			value: Array(6).fill(null).map(() => new THREE.Vector3()) 
+		},
+		uBoneColors: { 
+			value: Array(6).fill(null).map(() => new THREE.Color(0,0,0)) 
+		},
 	};
 
 	return new THREE.ShaderMaterial({
@@ -167,5 +230,6 @@ export function createDissolveMaterial(
 		fragmentShader,
 		side: THREE.DoubleSide,
 		transparent: false,
-	});
+		skinning: true,
+	} as any);
 }

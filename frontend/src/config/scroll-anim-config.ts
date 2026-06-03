@@ -89,21 +89,21 @@ const DESKTOP: Record<SectionId, SectionAnimConfig> = {
 	// Template (text right) → model left
 	template: section(
 		{ posX: 2.0, rotY: 0 },
-		{ posX: -1.8, rotY: -Math.PI / 4 },
+		{ posX: -1.8, rotY: 0 },
 	),
 	// Fitting (text left) → model right
 	fitting: section(
-		{ posX: -1.8, rotY: -Math.PI / 4 },
-		{ posX: 2.0, rotY: -Math.PI / 2 },
+		{ posX: -1.8, rotY: 0 },
+		{ posX: 2.0, rotY: 0 },
 	),
 	// Weighting (text right) → model left
 	weighting: section(
-		{ posX: 2.0, rotY: -Math.PI / 2 },
-		{ posX: -1.8, rotY: Math.PI / 2 },
+		{ posX: 2.0, rotY: 0 },
+		{ posX: -1.8, rotY: Math.PI },
 	),
 	// Download (text left) → model right — skeleton here
 	download: section(
-		{ posX: -1.8, rotY: Math.PI / 2 },
+		{ posX: -1.8, rotY: Math.PI },
 		{ posX: 2.0, rotY: 0 },
 	),
 };
@@ -128,18 +128,18 @@ const TABLET: Record<SectionId, SectionAnimConfig> = {
 	),
 	template: section(
 		{ posX: 1.2, rotY: 0 },
-		{ posX: -1.2, rotY: -Math.PI / 4 },
+		{ posX: -1.2, rotY: 0 },
 	),
 	fitting: section(
-		{ posX: -1.2, rotY: -Math.PI / 4 },
-		{ posX: 1.2, rotY: -Math.PI / 2 },
+		{ posX: -1.2, rotY: 0 },
+		{ posX: 1.2, rotY: 0 },
 	),
 	weighting: section(
-		{ posX: 1.2, rotY: -Math.PI / 2 },
-		{ posX: -1.2, rotY: Math.PI / 2 },
+		{ posX: 1.2, rotY: 0 },
+		{ posX: -1.2, rotY: Math.PI },
 	),
 	download: section(
-		{ posX: -1.2, rotY: Math.PI / 2 },
+		{ posX: -1.2, rotY: Math.PI },
 		{ posX: 1.2, rotY: 0 },
 	),
 };
@@ -165,18 +165,18 @@ const MOBILE: Record<SectionId, SectionAnimConfig> = {
 	),
 	template: section(
 		{ posX: 0, rotY: 0, scale: 0.85 },
-		{ posX: 0, rotY: -Math.PI / 4, scale: 0.85 },
+		{ posX: 0, rotY: 0, scale: 0.85 },
 	),
 	fitting: section(
-		{ posX: 0, rotY: -Math.PI / 4, scale: 0.85 },
-		{ posX: 0, rotY: -Math.PI / 2, scale: 0.85 },
+		{ posX: 0, rotY: 0, scale: 0.85 },
+		{ posX: 0, rotY: 0, scale: 0.85 },
 	),
 	weighting: section(
-		{ posX: 0, rotY: -Math.PI / 2, scale: 0.85 },
-		{ posX: 0, rotY: Math.PI / 2, scale: 0.85 },
+		{ posX: 0, rotY: 0, scale: 0.85 },
+		{ posX: 0, rotY: Math.PI, scale: 0.85 },
 	),
 	download: section(
-		{ posX: 0, rotY: Math.PI / 2, scale: 0.85 },
+		{ posX: 0, rotY: Math.PI, scale: 0.85 },
 		{ posX: 0, rotY: 0, scale: 0.85 },
 	),
 };
