@@ -145,7 +145,7 @@ The fully rigged model is exported as `.glb` (glTF Binary) and served to the fro
 ### 3D & ML
 | Technology | Purpose |
 |---|---|
-| **Blender 4.x (bpy)** | Headless 3D processing, rendering, rigging |
+| **Blender 5.x (bpy)** | Headless 3D processing, rendering, rigging |
 | **EfficientNetB0** | Image classification (transfer learning) |
 | **Geodesic Skinning** | Distance-based vertex weight calculation |
 
@@ -163,7 +163,7 @@ The fully rigged model is exported as `.glb` (glTF Binary) and served to the fro
 
 - **Node.js 18+** or **Bun** (recommended)
 - **Python 3.10+**
-- **Blender 4.x** (must be accessible from command line)
+- **Blender 5.x** (must be accessible from command line)
 
 ### Frontend Setup
 
