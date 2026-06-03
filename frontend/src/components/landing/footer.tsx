@@ -73,7 +73,7 @@ export default function Footer() {
 							</li>
 							<li>
 								<a
-									href="https://github.com/zamazincode/auto-rigging/blob/main/RIGGING_PIPELINE.md"
+									href="https://github.com/zamazincode/zamarig/blob/master/RIGGING_PIPELINE.md"
 									target="_blank"
 									rel="noopener noreferrer"
 									className="text-xs sm:text-sm text-copy-lighter hover:text-copy transition-colors"

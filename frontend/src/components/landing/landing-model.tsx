@@ -120,7 +120,14 @@ export default function LandingModel({
 		const selectedBones = [];
 		const numBones = Math.min(6, weightBones.length);
 		for (let i = 0; i < numBones; i++) {
-			selectedBones.push(weightBones[Math.floor((i / Math.max(1, numBones - 1)) * (weightBones.length - 1))]);
+			selectedBones.push(
+				weightBones[
+					Math.floor(
+						(i / Math.max(1, numBones - 1)) *
+							(weightBones.length - 1),
+					)
+				],
+			);
 		}
 
 		// Find the main mesh to convert world positions to mesh local space
@@ -141,8 +148,10 @@ export default function LandingModel({
 				new THREE.Color(0.5, 0.0, 1.0), // Purple
 			];
 
-			const positionsArray = humanMat.uniforms.uBonePositions.value as THREE.Vector3[];
-			const colorsArray = humanMat.uniforms.uBoneColors.value as THREE.Color[];
+			const positionsArray = humanMat.uniforms.uBonePositions
+				.value as THREE.Vector3[];
+			const colorsArray = humanMat.uniforms.uBoneColors
+				.value as THREE.Color[];
 
 			selectedBones.forEach((bone, i) => {
 				if (!bone) return;
@@ -174,7 +183,7 @@ export default function LandingModel({
 		const timer = setTimeout(() => {
 			triggersRef.current.forEach((t) => t.kill());
 			triggersRef.current = [];
-			ScrollTrigger.refresh();
+			// ScrollTrigger.refresh();
 
 			const config = getConfig();
 			const triggers: ScrollTrigger[] = [];
@@ -231,6 +240,9 @@ export default function LandingModel({
 				triggers.push(st);
 			}
 
+			// Moved here
+			ScrollTrigger.refresh();
+
 			// Force initial evaluation
 			updateTarget();
 
@@ -246,12 +258,16 @@ export default function LandingModel({
 							renderActive.current = true;
 							renderTime.current = 0;
 						},
-						onLeave: () => { renderActive.current = false; },
+						onLeave: () => {
+							renderActive.current = false;
+						},
 						onEnterBack: () => {
 							renderActive.current = true;
 							renderTime.current = 0;
 						},
-						onLeaveBack: () => { renderActive.current = false; },
+						onLeaveBack: () => {
+							renderActive.current = false;
+						},
 					}),
 				);
 			}
@@ -306,12 +322,20 @@ export default function LandingModel({
 				triggers.push(
 					ScrollTrigger.create({
 						trigger: templateEl,
-						start: "top 60%",
+						start: "top 40%",
 						end: "bottom 40%",
-						onEnter: () => { templateActive.current = true; },
-						onLeave: () => { templateActive.current = false; },
-						onEnterBack: () => { templateActive.current = true; },
-						onLeaveBack: () => { templateActive.current = false; },
+						onEnter: () => {
+							templateActive.current = true;
+						},
+						onLeave: () => {
+							templateActive.current = false;
+						},
+						onEnterBack: () => {
+							templateActive.current = true;
+						},
+						onLeaveBack: () => {
+							templateActive.current = false;
+						},
 					}),
 				);
 			}
@@ -324,10 +348,18 @@ export default function LandingModel({
 						trigger: fittingEl,
 						start: "top 60%",
 						end: "bottom 40%",
-						onEnter: () => { fittingActive.current = true; },
-						onLeave: () => { fittingActive.current = false; },
-						onEnterBack: () => { fittingActive.current = true; },
-						onLeaveBack: () => { fittingActive.current = false; },
+						onEnter: () => {
+							fittingActive.current = true;
+						},
+						onLeave: () => {
+							fittingActive.current = false;
+						},
+						onEnterBack: () => {
+							fittingActive.current = true;
+						},
+						onLeaveBack: () => {
+							fittingActive.current = false;
+						},
 					}),
 				);
 			}
@@ -340,10 +372,18 @@ export default function LandingModel({
 						trigger: weightingEl,
 						start: "top 60%",
 						end: "bottom 40%",
-						onEnter: () => { weightingActive.current = true; },
-						onLeave: () => { weightingActive.current = false; },
-						onEnterBack: () => { weightingActive.current = true; },
-						onLeaveBack: () => { weightingActive.current = false; },
+						onEnter: () => {
+							weightingActive.current = true;
+						},
+						onLeave: () => {
+							weightingActive.current = false;
+						},
+						onEnterBack: () => {
+							weightingActive.current = true;
+						},
+						onLeaveBack: () => {
+							weightingActive.current = false;
+						},
 					}),
 				);
 			}
@@ -356,10 +396,18 @@ export default function LandingModel({
 						trigger: downloadEl,
 						start: "top 60%",
 						end: "bottom 40%",
-						onEnter: () => { downloadActive.current = true; },
-						onLeave: () => { downloadActive.current = false; },
-						onEnterBack: () => { downloadActive.current = true; },
-						onLeaveBack: () => { downloadActive.current = false; },
+						onEnter: () => {
+							downloadActive.current = true;
+						},
+						onLeave: () => {
+							downloadActive.current = false;
+						},
+						onEnterBack: () => {
+							downloadActive.current = true;
+						},
+						onLeaveBack: () => {
+							downloadActive.current = false;
+						},
 					}),
 				);
 			}
@@ -455,7 +503,12 @@ export default function LandingModel({
 
 				// Shared geometries
 				const bodyGeom = new THREE.BoxGeometry(0.12, 0.08, 0.08);
-				const lensGeom = new THREE.CylinderGeometry(0.025, 0.03, 0.05, 12);
+				const lensGeom = new THREE.CylinderGeometry(
+					0.025,
+					0.03,
+					0.05,
+					12,
+				);
 				lensGeom.rotateX(Math.PI / 2);
 
 				for (let i = 0; i < 4; i++) {
@@ -483,7 +536,13 @@ export default function LandingModel({
 					camGroup.add(camMesh);
 				}
 
-				camGroup.userData = { camBodyMat, lensMat, laserMat, bodyGeom, lensGeom };
+				camGroup.userData = {
+					camBodyMat,
+					lensMat,
+					laserMat,
+					bodyGeom,
+					lensGeom,
+				};
 				state.scene.add(camGroup);
 				cameraGroupRef.current = camGroup;
 			}
@@ -500,22 +559,37 @@ export default function LandingModel({
 				const baseAngle = renderTime.current * orbitSpeed;
 
 				camGroup.children.forEach((camMesh, idx) => {
-					const angle = baseAngle + (idx * Math.PI / 2);
+					const angle = baseAngle + (idx * Math.PI) / 2;
 					const x = modelCenter.x + Math.cos(angle) * orbitRadius;
 					const z = modelCenter.z + Math.sin(angle) * orbitRadius;
-					const y = modelCenter.y + Math.sin(renderTime.current * 0.7 + idx) * 0.15;
+					const y =
+						modelCenter.y +
+						Math.sin(renderTime.current * 0.7 + idx) * 0.15;
 
 					camMesh.position.set(x, y, z);
 					camMesh.lookAt(modelCenter);
 
 					// Update laser line endpoint
 					camMesh.children.forEach((child) => {
-						if (child.userData.isLaser && child instanceof THREE.Line) {
-							const laserGeom = child.geometry as THREE.BufferGeometry;
-							const worldToLocal = camMesh.matrixWorld.clone().invert();
-							const localTarget = modelCenter.clone().applyMatrix4(worldToLocal);
+						if (
+							child.userData.isLaser &&
+							child instanceof THREE.Line
+						) {
+							const laserGeom =
+								child.geometry as THREE.BufferGeometry;
+							const worldToLocal = camMesh.matrixWorld
+								.clone()
+								.invert();
+							const localTarget = modelCenter
+								.clone()
+								.applyMatrix4(worldToLocal);
 							const positions = laserGeom.attributes.position;
-							positions.setXYZ(1, localTarget.x, localTarget.y, localTarget.z);
+							positions.setXYZ(
+								1,
+								localTarget.x,
+								localTarget.y,
+								localTarget.z,
+							);
 							positions.needsUpdate = true;
 						}
 					});
@@ -594,7 +668,8 @@ export default function LandingModel({
 			// template = 0 (misaligned), fitting/download = 1 (aligned)
 			const targetLerp = templateActive.current ? 0 : 1;
 			// Smoothly animate the lerp value
-			skeletonLerp.current += (targetLerp - skeletonLerp.current) * (delta * 4.0);
+			skeletonLerp.current +=
+				(targetLerp - skeletonLerp.current) * (delta * 4.0);
 
 			if (!skeletonGroupRef.current) {
 				const boneGroup = new THREE.Group();
@@ -611,7 +686,12 @@ export default function LandingModel({
 				});
 
 				const sphereGeom = new THREE.SphereGeometry(0.015, 8, 8);
-				const cylinderGeom = new THREE.CylinderGeometry(0.018, 0.006, 1, 8);
+				const cylinderGeom = new THREE.CylinderGeometry(
+					0.018,
+					0.006,
+					1,
+					8,
+				);
 				cylinderGeom.translate(0, 0.5, 0); // Base at origin
 				cylinderGeom.rotateX(Math.PI / 2); // Point along +Z
 
@@ -627,7 +707,7 @@ export default function LandingModel({
 				});
 				const modelCenter = new THREE.Vector3();
 				if (boneWorldPositions.length > 0) {
-					boneWorldPositions.forEach(p => modelCenter.add(p));
+					boneWorldPositions.forEach((p) => modelCenter.add(p));
 					modelCenter.divideScalar(boneWorldPositions.length);
 				}
 
@@ -645,12 +725,13 @@ export default function LandingModel({
 						distortedWorld.x = modelCenter.x + dx * 1.45;
 						// Random deterministic offset based on bone name length/chars
 						const seed = bone.name.length;
-						distortedWorld.y += (Math.sin(seed * 123) * 0.15);
-						distortedWorld.z += (Math.cos(seed * 321) * 0.08);
+						distortedWorld.y += Math.sin(seed * 123) * 0.15;
+						distortedWorld.z += Math.cos(seed * 321) * 0.08;
 
 						// Convert distorted world to bone local space
 						const boneInverse = bone.matrixWorld.clone().invert();
-						const distortedLocal = distortedWorld.applyMatrix4(boneInverse);
+						const distortedLocal =
+							distortedWorld.applyMatrix4(boneInverse);
 
 						// Create joint sphere
 						const joint = new THREE.Mesh(sphereGeom, boneMat);
@@ -671,19 +752,26 @@ export default function LandingModel({
 								const cdx = cDistortedWorld.x - modelCenter.x;
 								cDistortedWorld.x = modelCenter.x + cdx * 1.45;
 								const cSeed = childBone.name.length;
-								cDistortedWorld.y += (Math.sin(cSeed * 123) * 0.15);
-								cDistortedWorld.z += (Math.cos(cSeed * 321) * 0.08);
+								cDistortedWorld.y +=
+									Math.sin(cSeed * 123) * 0.15;
+								cDistortedWorld.z +=
+									Math.cos(cSeed * 321) * 0.08;
 
 								// Child's distorted position in THIS bone's local space
-								const childDistortedLocal = cDistortedWorld.applyMatrix4(boneInverse);
+								const childDistortedLocal =
+									cDistortedWorld.applyMatrix4(boneInverse);
 
-								const seg = new THREE.Mesh(cylinderGeom, boneMat);
+								const seg = new THREE.Mesh(
+									cylinderGeom,
+									boneMat,
+								);
 								seg.renderOrder = 999;
 								seg.userData = {
 									isCustomBone: true,
 									isSegment: true,
 									childDistortedLocal,
-									childCorrectLocal: childBone.position.clone()
+									childCorrectLocal:
+										childBone.position.clone(),
 								};
 								joint.add(seg); // Add segment to joint so it moves with the joint's offset!
 							}
@@ -715,32 +803,50 @@ export default function LandingModel({
 					if (child.type === "Bone") {
 						const bone = child as THREE.Bone;
 						bone.children.forEach((joint) => {
-							if (joint.userData.isCustomBone && !joint.userData.isSegment) {
+							if (
+								joint.userData.isCustomBone &&
+								!joint.userData.isSegment
+							) {
 								// Interpolate joint position
-								const distLocal = joint.userData.distortedLocal as THREE.Vector3;
-								joint.position.lerpVectors(distLocal, new THREE.Vector3(0, 0, 0), lerp);
+								const distLocal = joint.userData
+									.distortedLocal as THREE.Vector3;
+								joint.position.lerpVectors(
+									distLocal,
+									new THREE.Vector3(0, 0, 0),
+									lerp,
+								);
 
 								// Update segments attached to this joint
 								joint.children.forEach((seg) => {
 									if (seg.userData.isSegment) {
-										const cDistLocal = seg.userData.childDistortedLocal as THREE.Vector3;
-										const cCorrLocal = seg.userData.childCorrectLocal as THREE.Vector3;
+										const cDistLocal = seg.userData
+											.childDistortedLocal as THREE.Vector3;
+										const cCorrLocal = seg.userData
+											.childCorrectLocal as THREE.Vector3;
 
 										// Calculate where the child is currently located in bone space
-										const currentChildLocal = new THREE.Vector3().lerpVectors(cDistLocal, cCorrLocal, lerp);
+										const currentChildLocal =
+											new THREE.Vector3().lerpVectors(
+												cDistLocal,
+												cCorrLocal,
+												lerp,
+											);
 
 										// Segment points from joint (which is at joint.position) to child (currentChildLocal)
 										// Since segment is a child of joint, its local space origin is joint.position.
 										// So we need the vector from joint.position to currentChildLocal
-										const dir = currentChildLocal.clone().sub(joint.position);
+										const dir = currentChildLocal
+											.clone()
+											.sub(joint.position);
 										const length = dir.length();
 
 										if (length > 0.001) {
 											seg.scale.set(1, 1, length);
-											const q = new THREE.Quaternion().setFromUnitVectors(
-												new THREE.Vector3(0, 0, 1),
-												dir.normalize(),
-											);
+											const q =
+												new THREE.Quaternion().setFromUnitVectors(
+													new THREE.Vector3(0, 0, 1),
+													dir.normalize(),
+												);
 											seg.quaternion.copy(q);
 											seg.visible = true;
 										} else {
@@ -756,30 +862,36 @@ export default function LandingModel({
 				// Update model opacity
 				// template = 0.4 opacity, fitting/download = 1.0 opacity
 				humanGltf.scene.traverse((child) => {
-					if (child instanceof THREE.Mesh && !child.userData.isCustomBone) {
+					if (
+						child instanceof THREE.Mesh &&
+						!child.userData.isCustomBone
+					) {
 						const m = child.material as THREE.ShaderMaterial;
-						const currentOpacity = 0.4 + (0.6 * lerp);
+						const currentOpacity = 0.4 + 0.6 * lerp;
 
-						if (m.uniforms?.uAlpha) m.uniforms.uAlpha.value = currentOpacity;
-						else if ('opacity' in m) {
+						if (m.uniforms?.uAlpha)
+							m.uniforms.uAlpha.value = currentOpacity;
+						else if ("opacity" in m) {
 							m.transparent = currentOpacity < 1.0;
 							(m as any).opacity = currentOpacity;
 						}
 					}
 				});
 			}
-
 		} else {
 			// Cleanup skeleton
 			if (skeletonGroupRef.current) {
 				humanGltf.scene.traverse((child) => {
 					if (child.type === "Bone") {
-						const toRemove = child.children.filter((c) => c.userData.isCustomBone);
+						const toRemove = child.children.filter(
+							(c) => c.userData.isCustomBone,
+						);
 						toRemove.forEach((c) => child.remove(c));
 					}
 				});
 
-				const { boneMat, sphereGeom, cylinderGeom } = skeletonGroupRef.current.userData;
+				const { boneMat, sphereGeom, cylinderGeom } =
+					skeletonGroupRef.current.userData;
 				boneMat.dispose();
 				sphereGeom.dispose();
 				cylinderGeom.dispose();
@@ -789,10 +901,13 @@ export default function LandingModel({
 
 				// Restore model opacity
 				humanGltf.scene.traverse((child) => {
-					if (child instanceof THREE.Mesh && !child.userData.isCustomBone) {
+					if (
+						child instanceof THREE.Mesh &&
+						!child.userData.isCustomBone
+					) {
 						const m = child.material as THREE.ShaderMaterial;
 						if (m.uniforms?.uAlpha) m.uniforms.uAlpha.value = 1.0;
-						else if ('opacity' in m) {
+						else if ("opacity" in m) {
 							m.transparent = false;
 							(m as any).opacity = 1.0;
 						}
@@ -804,8 +919,10 @@ export default function LandingModel({
 		// === Weight Paint Animation ===
 		if (humanDissolveRef.current) {
 			const targetWeight = weightingActive.current ? 1.0 : 0.0;
-			const currentWeight = humanDissolveRef.current.uniforms.uWeightProgress.value;
-			humanDissolveRef.current.uniforms.uWeightProgress.value += (targetWeight - currentWeight) * (delta * 3.0);
+			const currentWeight =
+				humanDissolveRef.current.uniforms.uWeightProgress.value;
+			humanDissolveRef.current.uniforms.uWeightProgress.value +=
+				(targetWeight - currentWeight) * (delta * 3.0);
 		}
 
 		// === Step 7: Idle Animation (Download section) ===
@@ -814,15 +931,26 @@ export default function LandingModel({
 
 			// Switch to standard skinning material
 			humanGltf.scene.traverse((child) => {
-				if ((child instanceof THREE.Mesh || child.type === "SkinnedMesh") && child.userData.standardMat) {
-					if ((child as THREE.Mesh).material !== child.userData.standardMat) {
-						(child as THREE.Mesh).material = child.userData.standardMat;
+				if (
+					(child instanceof THREE.Mesh ||
+						child.type === "SkinnedMesh") &&
+					child.userData.standardMat
+				) {
+					if (
+						(child as THREE.Mesh).material !==
+						child.userData.standardMat
+					) {
+						(child as THREE.Mesh).material =
+							child.userData.standardMat;
 					}
 				}
 			});
 
 			// Ease in the idle pose over ~2 seconds
-			idleProgress.current = Math.min(1, idleProgress.current + delta * 0.5);
+			idleProgress.current = Math.min(
+				1,
+				idleProgress.current + delta * 0.5,
+			);
 			const p = smoothstep(idleProgress.current);
 
 			// Save original rotations on first frame
@@ -847,10 +975,15 @@ export default function LandingModel({
 				if (!saved) return;
 
 				// Breathing — subtle chest/spine movement
-				if (name.includes("spine") || name.includes("chest") || name.includes("torso")) {
+				if (
+					name.includes("spine") ||
+					name.includes("chest") ||
+					name.includes("torso")
+				) {
 					const breathe = Math.sin(time * 1.8) * 0.015 * p;
 					bone.rotation.x = saved.x + breathe;
-					bone.rotation.z = saved.z + Math.sin(time * 0.7) * 0.008 * p;
+					bone.rotation.z =
+						saved.z + Math.sin(time * 0.7) * 0.008 * p;
 				}
 
 				// Head — gentle look around
@@ -860,11 +993,21 @@ export default function LandingModel({
 				}
 
 				// Upper arms — loop up and down
-				if (name.includes("upperarm") || name.includes("upper_arm") || name.includes("arm.l") || name.includes("arm.r") || name.includes("shoulder")) {
+				if (
+					name.includes("upperarm") ||
+					name.includes("upper_arm") ||
+					name.includes("arm.l") ||
+					name.includes("arm.r") ||
+					name.includes("shoulder")
+				) {
 					const armLower = 0.15 * p;
 					// Add a looping sine wave for the up/down motion
-					const loopMotion = Math.sin(time * 2.5) * 0.6 * p; 
-					if (name.includes("left") || name.includes(".l") || name.includes("_l")) {
+					const loopMotion = Math.sin(time * 2.5) * 0.6 * p;
+					if (
+						name.includes("left") ||
+						name.includes(".l") ||
+						name.includes("_l")
+					) {
 						bone.rotation.z = saved.z + armLower - loopMotion;
 					} else {
 						bone.rotation.z = saved.z - armLower + loopMotion;
@@ -872,7 +1015,11 @@ export default function LandingModel({
 				}
 
 				// Forearms — bend with the loop
-				if (name.includes("forearm") || name.includes("lower_arm") || name.includes("lowerarm")) {
+				if (
+					name.includes("forearm") ||
+					name.includes("lower_arm") ||
+					name.includes("lowerarm")
+				) {
 					const loopBend = Math.abs(Math.sin(time * 2.5)) * 0.5 * p;
 					bone.rotation.y = saved.y + 0.3 * p + loopBend;
 					bone.rotation.x = saved.x + Math.sin(time * 1.2) * 0.02 * p;
@@ -880,20 +1027,33 @@ export default function LandingModel({
 
 				// Hips — very subtle sway
 				if (name.includes("hip") || name.includes("pelvis")) {
-					bone.rotation.y = saved.y + Math.sin(time * 0.4) * 0.015 * p;
+					bone.rotation.y =
+						saved.y + Math.sin(time * 0.4) * 0.015 * p;
 				}
 
 				// Legs — very slight knee bend
-				if (name.includes("thigh") || name.includes("upper_leg") || name.includes("upperleg")) {
+				if (
+					name.includes("thigh") ||
+					name.includes("upper_leg") ||
+					name.includes("upperleg")
+				) {
 					bone.rotation.x = saved.x + 0.05 * p;
 				}
 			});
 		} else {
 			// Switch back to dissolve material
 			humanGltf.scene.traverse((child) => {
-				if ((child instanceof THREE.Mesh || child.type === "SkinnedMesh") && child.userData.dissolveMat) {
-					if ((child as THREE.Mesh).material !== child.userData.dissolveMat) {
-						(child as THREE.Mesh).material = child.userData.dissolveMat;
+				if (
+					(child instanceof THREE.Mesh ||
+						child.type === "SkinnedMesh") &&
+					child.userData.dissolveMat
+				) {
+					if (
+						(child as THREE.Mesh).material !==
+						child.userData.dissolveMat
+					) {
+						(child as THREE.Mesh).material =
+							child.userData.dissolveMat;
 					}
 				}
 			});
@@ -909,13 +1069,18 @@ export default function LandingModel({
 
 			// Restore original bone rotations when leaving download section
 			if (idleProgress.current > 0) {
-				idleProgress.current = Math.max(0, idleProgress.current - delta * 2.0);
+				idleProgress.current = Math.max(
+					0,
+					idleProgress.current - delta * 2.0,
+				);
 				const p = smoothstep(idleProgress.current);
 
 				if (savedBoneRotations.current.size > 0) {
 					humanGltf.scene.traverse((child) => {
 						if (child.type !== "Bone") return;
-						const saved = savedBoneRotations.current.get(child.name);
+						const saved = savedBoneRotations.current.get(
+							child.name,
+						);
 						if (!saved) return;
 						// Lerp back to saved rotation
 						child.rotation.x += (saved.x - child.rotation.x) * 0.1;
@@ -927,7 +1092,9 @@ export default function LandingModel({
 						// Snap to exact original and clear
 						humanGltf.scene.traverse((child) => {
 							if (child.type !== "Bone") return;
-							const saved = savedBoneRotations.current.get(child.name);
+							const saved = savedBoneRotations.current.get(
+								child.name,
+							);
 							if (saved) child.rotation.copy(saved);
 						});
 						savedBoneRotations.current.clear();
@@ -937,14 +1104,18 @@ export default function LandingModel({
 				}
 			}
 		}
-
 	});
 
 	return (
 		<group
 			ref={groupRef}
-			position={[target.current.posX, 0, 0]}
+			position={[
+				target.current.posX,
+				target.current.posY,
+				target.current.posZ,
+			]}
 			rotation={[0, target.current.rotY, 0]}
+			scale={target.current.scale}
 		>
 			<primitive object={humanGltf.scene} />
 			<primitive object={quadrupedGltf.scene} />
