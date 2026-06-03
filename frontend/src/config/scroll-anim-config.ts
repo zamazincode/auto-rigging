@@ -79,32 +79,32 @@ const DESKTOP: Record<SectionId, SectionAnimConfig> = {
 	// Render (text right) → model left
 	render: section(
 		{ posX: 1.6, rotY: 0 },
-		{ posX: -2.0, rotY: Math.PI * 2 },
+		{ posX: -1.6, rotY: Math.PI * 2 },
 	),
 	// Classify (text left) → model right — dissolve happens here
 	classify: section(
-		{ posX: -2.0, rotY: Math.PI * 2 },
-		{ posX: 2.0, rotY: 0 },
+		{ posX: -1.6, rotY: Math.PI * 2 },
+		{ posX: 1.6, rotY: 0 },
 	),
 	// Template (text right) → model left
 	template: section(
-		{ posX: 2.0, rotY: 0 },
-		{ posX: -1.8, rotY: 0 },
+		{ posX: 1.6, rotY: 0 },
+		{ posX: -1.6, rotY: 0 },
 	),
 	// Fitting (text left) → model right
 	fitting: section(
-		{ posX: -1.8, rotY: 0 },
-		{ posX: 2.0, rotY: 0 },
+		{ posX: -1.6, rotY: 0 },
+		{ posX: 1.6, rotY: 0 },
 	),
 	// Weighting (text right) → model left
 	weighting: section(
-		{ posX: 2.0, rotY: 0 },
-		{ posX: -1.8, rotY: Math.PI },
+		{ posX: 1.6, rotY: 0 },
+		{ posX: -1.6, rotY: Math.PI },
 	),
 	// Download (text left) → model right — skeleton here
 	download: section(
-		{ posX: -1.8, rotY: Math.PI },
-		{ posX: 2.0, rotY: 0 },
+		{ posX: -1.6, rotY: Math.PI },
+		{ posX: 1.6, rotY: 0 },
 	),
 };
 
