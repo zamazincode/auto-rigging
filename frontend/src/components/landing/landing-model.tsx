@@ -130,7 +130,7 @@ export default function LandingModel({
 		});
 
 		if (mainMesh) {
-			const meshInverse = mainMesh.matrixWorld.clone().invert();
+			const meshInverse = mainMesh?.matrixWorld.clone().invert();
 			const colors = [
 				new THREE.Color(1.0, 0.0, 0.0), // Red
 				new THREE.Color(1.0, 0.5, 0.0), // Orange
