@@ -129,8 +129,9 @@ export default function LandingModel({
 			if (!mainMesh && child instanceof THREE.Mesh) mainMesh = child;
 		});
 
-		if (mainMesh) {
-			const meshInverse = mainMesh?.matrixWorld.clone().invert();
+		const targetMesh = mainMesh as THREE.Mesh | null;
+		if (targetMesh) {
+			const meshInverse = targetMesh.matrixWorld.clone().invert();
 			const colors = [
 				new THREE.Color(1.0, 0.0, 0.0), // Red
 				new THREE.Color(1.0, 0.5, 0.0), // Orange
@@ -820,46 +821,6 @@ export default function LandingModel({
 				}
 			});
 
-			// Create glowing Ready sprite
-			if (!readySpriteRef.current) {
-				const canvas = document.createElement("canvas");
-				canvas.width = 512;
-				canvas.height = 128;
-				const ctx = canvas.getContext("2d")!;
-				ctx.clearRect(0, 0, 512, 128);
-				ctx.font = "bold 80px Inter, sans-serif";
-				ctx.textAlign = "center";
-				ctx.textBaseline = "middle";
-
-				// Glowing text effect
-				ctx.shadowColor = "#00ffcc";
-				ctx.shadowBlur = 20;
-				ctx.fillStyle = "#ffffff";
-				ctx.fillText("READY!", 256, 64);
-				ctx.shadowBlur = 40;
-				ctx.fillText("READY!", 256, 64);
-
-				const tex = new THREE.CanvasTexture(canvas);
-				const spriteMat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
-				const sprite = new THREE.Sprite(spriteMat);
-				sprite.scale.set(1.5, 0.375, 1);
-				sprite.position.set(0, 1.2, 0); // Above the model
-				sprite.renderOrder = 9999;
-
-				// Add to group instead of humanGltf so it rotates with the container
-				group?.add(sprite);
-				readySpriteRef.current = sprite;
-			}
-
-			// Animate sprite
-			if (readySpriteRef.current) {
-				const time = idleTime.current;
-				const pulse = Math.sin(time * 3.0) * 0.05;
-				readySpriteRef.current.position.y = 1.25 + Math.sin(time * 1.5) * 0.05;
-				readySpriteRef.current.scale.set(1.5 + pulse, 0.375 + pulse * 0.25, 1);
-				readySpriteRef.current.material.opacity = Math.min(1.0, idleTime.current * 2.0); // Fade in
-			}
-
 			// Ease in the idle pose over ~2 seconds
 			idleProgress.current = Math.min(1, idleProgress.current + delta * 0.5);
 			const p = smoothstep(idleProgress.current);
@@ -898,20 +859,22 @@ export default function LandingModel({
 					bone.rotation.x = saved.x + Math.sin(time * 0.8) * 0.02 * p;
 				}
 
-				// Upper arms — lower from T-pose
+				// Upper arms — loop up and down
 				if (name.includes("upperarm") || name.includes("upper_arm") || name.includes("arm.l") || name.includes("arm.r") || name.includes("shoulder")) {
-					// Lower arms ~45 degrees from T-pose
-					const armLower = 0.7 * p;
+					const armLower = 0.15 * p;
+					// Add a looping sine wave for the up/down motion
+					const loopMotion = Math.sin(time * 2.5) * 0.6 * p; 
 					if (name.includes("left") || name.includes(".l") || name.includes("_l")) {
-						bone.rotation.z = saved.z + armLower + Math.sin(time * 0.6) * 0.03 * p;
+						bone.rotation.z = saved.z + armLower - loopMotion;
 					} else {
-						bone.rotation.z = saved.z - armLower - Math.sin(time * 0.6) * 0.03 * p;
+						bone.rotation.z = saved.z - armLower + loopMotion;
 					}
 				}
 
-				// Forearms — slight bend
+				// Forearms — bend with the loop
 				if (name.includes("forearm") || name.includes("lower_arm") || name.includes("lowerarm")) {
-					bone.rotation.y = saved.y + 0.3 * p;
+					const loopBend = Math.abs(Math.sin(time * 2.5)) * 0.5 * p;
+					bone.rotation.y = saved.y + 0.3 * p + loopBend;
 					bone.rotation.x = saved.x + Math.sin(time * 1.2) * 0.02 * p;
 				}
 
